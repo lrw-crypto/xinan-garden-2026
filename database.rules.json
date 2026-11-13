@@ -1,0 +1,96 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "players": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['name','color','style','x','y','state','updatedAt'])",
+        "name": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 12 && !newData.val().matches(/.*[<>].*/)"
+        },
+        "color": {
+          ".validate": "newData.val() === '#d398a6' || newData.val() === '#80a891' || newData.val() === '#b4a1cb' || newData.val() === '#c9a560'"
+        },
+        "style": {
+          ".validate": "newData.val() === 'human' || newData.val() === 'bear'"
+        },
+        "x": {
+          ".validate": "newData.isNumber() && newData.val() >= 55 && newData.val() <= 945"
+        },
+        "y": {
+          ".validate": "newData.isNumber() && newData.val() >= 150 && newData.val() <= 535"
+        },
+        "state": {
+          ".validate": "newData.val() === 'walking' || newData.val() === 'praying' || newData.val() === 'meditating' || newData.val() === 'queue' || newData.val() === 'blessing' || newData.val() === 'resting'"
+        },
+        "updatedAt": {
+          ".validate": "newData.isNumber()"
+        },
+        "emoji": {
+          ".validate": "newData.val() === '💪 加油' || newData.val() === '💛 謝謝' || newData.val() === '🌷 陪伴'"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "queue": {
+      ".read": "auth != null",
+      ".indexOn": [
+        "joinedAt"
+      ],
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['joinedAt'])",
+        "joinedAt": {
+          ".validate": "newData.isNumber() && ((!data.exists() && newData.val() === now) || newData.val() === data.val())"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "publicWishes": {
+      ".read": "auth != null",
+      "$id": {
+        ".validate": "newData.hasChildren(['uid','text','createdAt'])",
+        "uid": {
+          ".validate": "newData.val() === auth.uid"
+        },
+        "text": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 120 && !newData.val().matches(/.*[<>].*/) && !newData.val().matches(/.*(笨蛋|白痴|去死|幹你).*/)"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber() && newData.val() <= now && newData.val() >= now - 60000"
+        },
+        "$other": {
+          ".validate": false
+        },
+        ".write": "auth != null && ((!data.exists() && newData.child('uid').val() === auth.uid) || data.child('uid').val() === auth.uid)"
+      }
+    },
+    "privateWishes": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$id": {
+          ".validate": "newData.hasChildren(['uid','text','createdAt'])",
+          "uid": {
+            ".validate": "newData.val() === auth.uid"
+          },
+          "text": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 120 && !newData.val().matches(/.*[<>].*/) && !newData.val().matches(/.*(笨蛋|白痴|去死|幹你).*/)"
+          },
+          "createdAt": {
+            ".validate": "newData.isNumber() && newData.val() <= now && newData.val() >= now - 60000"
+          },
+          "$other": {
+            ".validate": false
+          },
+          ".write": "auth != null && auth.uid === $uid"
+        }
+      }
+    }
+  }
+}
