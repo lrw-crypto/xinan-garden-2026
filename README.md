@@ -1,7 +1,7 @@
 # 草商輔導寺
 有心誠則靈，努力自有光。
 
-Vite + TypeScript + Phaser 3 + Firebase Authentication / Realtime Database。庭院使用為本專案生成的原創卡通美術，學生公仔為原創生成透明素材，由 Phaser 控制移動、姿勢與動態花瓣，沒有複製參考網站素材。匿名登入，不收集真實姓名、Email 或密碼。
+Vite + TypeScript + three.js（r170，內含於 src/vendor）+ Firebase Authentication / Realtime Database。庭院是以程式建模的 3D 黏土風場景（櫻花樹、錦鯉池與拱橋、青綠瓦屋頂、紅燈籠、繪馬架），全部由基本幾何體組成，沒有使用外部模型，也沒有複製參考圖或參考網站的素材。學生公仔為原創生成的透明立牌，胸口疊上原始校徽。匿名登入，不收集真實姓名、Email 或密碼。
 
 ## 本機開發
 需要 Node.js 22+、Java 21（Firebase Emulator）。
@@ -56,10 +56,11 @@ Vite base 已設定 /xinan-garden-2026/。部署不包含 Firebase 規則。
 
 ## 檔案
 - src/main.ts：登入、五項互動、連線、狀態與隊列
-- src/garden.ts：Phaser 庭院載入、動態花瓣、走路與角色渲染
-- public/art/temple-courtyard.webp：原創古風庭院背景（約 708 KB）
+- src/garden3d.js／garden3d.d.ts：3D 庭院建模、鏡頭、點擊尋路、鍵盤與觸控操作、人物立牌與名牌
+- src/vendor/three.module.min.js：three.js r170（MIT 授權，授權條款在同資料夾）
+- reference/：使用者提供的人物與風格參考圖，僅供對照，不會部署到網站
 - src/firebase.ts：Firebase 初始化、可選本機 Emulator
-- src/fortunes.ts：12 主題 × 5 段原創鼓勵共 60 支籤
+- src/fortunes.ts：60 支各自獨立的原創暖心籤（籤詩、白話解釋、鼓勵、今日小行動）
 - src/style.css：手機與桌面版面
 - database.rules.json：預設拒絕的 RTDB 規則
 - tests/rules.test.mjs：允許、拒絕與雙用戶同步測試
@@ -74,3 +75,18 @@ npm ci --cache /tmp/npm-cache 可避開受限的家目錄快取路徑。
 瀏覽器整合測試：執行 npm run test:browser，會自動啟動 Emulator 與 5174 埠測試伺服器。需要已安裝 Chromium（本機 /usr/bin/chromium 或 Playwright Chromium）。CI 上傳 browser-results 截圖供檢查。此為 Chromium 模擬手機寬度，尚不代表真實 iPhone Safari 驗證。
 
 學生公仔已採藍白制服，短髮／長髮眼鏡造型；靜心與休息使用盤腿合十、閉眼姿勢。胸口直接使用使用者上傳的 public/art/school-emblem.png，僅等比例縮放，不重畫、不染色、不左右翻轉。
+
+## 3D 庭院與操作
+- 走路：點地面會自動繞過池塘、建築與樹走過去（池塘只能從拱橋通過）；桌機可用 WASD 或方向鍵，空白鍵跳躍，E 進入附近的互動點。
+- 鏡頭：跟著自己的人物。拖曳可平移畫面（按「拖曳：平移／旋轉」切換成旋轉），雙指可縮放與旋轉，滾輪縮放，右鍵或 Shift 拖曳旋轉；「找自己」回到人物身上。
+- 互動：點場景上的景點標籤會走過去並開啟；走到附近時上方會出現「進入○○」按鈕。右側（手機在下方）的五個按鈕仍可直接開啟。
+- 人物走路：站姿圖沿褲腳分成上半身與左右腿三片，兩腿繞髖部交替擺動（橫向移動時前後擺腿，朝鏡頭或遠離鏡頭時交替抬腳），身體每一步輕輕起伏。步伐由實際走過的距離推動（每步 0.8 單位），所以腳不會在地上滑；停下時雙腿回到站姿。手臂不會擺動，這仍是立牌而不是 3D 人物模型。
+- 校徽直接使用 school-emblem.png，疊在胸口，不重畫、不染色、不翻轉。
+- 其他同學的位置每秒約更新 5 次，畫面上以滑行補間。跳躍只顯示在自己的畫面，不會同步。
+- 走進或靠近靜心亭時，屋頂會變透明。鏡頭繞到圍牆外時，擋住視線的那面牆會收起。
+- 祈福：送出後繪馬架上會多一塊粉色繪馬（只有自己看得到，重新整理後消失）。
+- 補運：排隊同學依順位在小屋門口排成一列；輪到時站到門口，三顆星環繞，對話框依序顯示掃走煩惱、補充勇氣、星光環繞，結束後抽一張祝福卡。
+- 資料庫座標仍是原本的範圍（x 55–945、y 150–535），在 3D 世界換算成 44 × 31 的地面，因此 database.rules.json 沒有更動，不需要重新發布規則。
+- 人物造型仍為短髮、長髮兩種。新增造型需要新的透明人物圖，且要修改並重新發布 database.rules.json 的 style 白名單。
+- package.json 仍列有 phaser，但程式已不再匯入，不會被打包；因開發環境無法更新 package-lock.json 而暫時保留。
+- 若瀏覽器無法建立 WebGL，庭院不會顯示，但登入與五項互動的按鈕仍可使用。
