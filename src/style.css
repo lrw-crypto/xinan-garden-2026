@@ -39,3 +39,33 @@ button{background:#aa7795}
 .student-choice .student-body{display:block;width:100%;height:100%;object-fit:fill}
 .student-choice .student-emblem{position:absolute;height:auto;max-width:none;object-fit:contain;transform:translate(-50%,-50%);filter:none;pointer-events:none}
 @media(max-height:800px){.student-portrait{height:110px}}
+
+/* School emblem in the header: the uploaded file, only scaled. */
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand-emblem{width:46px;height:46px;object-fit:contain;flex-shrink:0}
+@media(max-width:600px){.brand{gap:8px}.brand-emblem{width:36px;height:36px}}
+
+/* Wishing tree: a branch inside the dialog where each new card rises and hangs. */
+.branch{position:relative;height:78px;margin:4px 0 12px;border-top:7px solid #9b7250;border-radius:6px 40px 0 0;background:radial-gradient(ellipse at 30% -10%,#cfe5b4 0,transparent 62%),radial-gradient(ellipse at 75% -20%,#ffd9e4 0,transparent 55%)}
+.hung{position:absolute;top:0;width:26px;height:44px;margin-top:14px;background:#ffe3ea;border:1px solid #e59aae;border-radius:5px;color:#a4526c;font-size:13px;font-weight:800;display:grid;place-items:center;transform-origin:50% -14px;animation:hang .9s ease-out,sway 3.2s .9s ease-in-out infinite alternate}
+.hung::before{content:'';position:absolute;left:50%;top:-15px;height:14px;border-left:2px solid #c0504d}
+@keyframes hang{from{transform:translateY(120px) rotate(18deg);opacity:0}60%{opacity:1}to{transform:none}}
+@keyframes sway{from{transform:rotate(-6deg)}to{transform:rotate(6deg)}}
+
+/* Fortune tube drawn in CSS: sticks rattle while shaking, one rises when drawn. */
+.tube-wrap{display:flex;justify-content:center;height:128px;align-items:flex-end;margin:6px 0 2px}
+.tube{position:relative;width:74px;height:86px;background:linear-gradient(90deg,#b9794f,#d79a6a 45%,#a9683f);border-radius:8px 8px 20px 20px;border-top:6px solid #8d5632;transform-origin:50% 100%;display:grid;place-items:center}
+.tube b{color:#fff3df;font-size:24px;background:#b23a3a;border-radius:50%;width:40px;height:40px;display:grid;place-items:center}
+.tube i{position:absolute;bottom:80px;width:7px;height:34px;background:#f0d9a8;border:1px solid #c9a56c;border-radius:3px 3px 0 0;transition:transform .5s ease-out}
+.tube i:nth-child(1){left:14px;transform:rotate(-9deg)}.tube i:nth-child(2){left:27px;height:40px}.tube i:nth-child(3){left:40px;height:36px;transform:rotate(5deg)}.tube i:nth-child(4){left:53px;transform:rotate(11deg)}
+.tube.shake i{animation:rattle .12s infinite alternate}
+.tube.drawn i:nth-child(2){transform:translateY(-24px);background:#ffe9a8}
+@keyframes rattle{to{margin-bottom:5px}}
+
+/* Blessing hut queue shown as a row of name tags. */
+.queue-line{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.queue-person{font-size:12px;padding:5px 10px;border-radius:14px;background:#f1ece2;color:#6b5c4c}
+.queue-person.me{background:#f6dfe8;color:#8a4c69;font-weight:600}
+.card.bless{background:linear-gradient(135deg,#fff3d6,#fbe3ec);border:1px solid #ecd2a8;animation:glow 1.2s ease-out}
+@keyframes glow{from{transform:scale(.92);opacity:0;box-shadow:0 0 0 0 #ffe28c}to{box-shadow:0 0 28px 2px #ffe28c66}}
+@media(prefers-reduced-motion:reduce){.hung,.tube.shake,.tube.shake i,.card.bless{animation:none}}

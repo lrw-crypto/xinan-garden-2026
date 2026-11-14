@@ -56,10 +56,11 @@ Vite base 已設定 /xinan-garden-2026/。部署不包含 Firebase 規則。
 
 ## 檔案
 - src/main.ts：登入、五項互動、連線、狀態與隊列
-- src/garden.ts：Phaser 庭院載入、動態花瓣、走路與角色渲染
+- src/garden.ts：Phaser 庭院載入、動態花瓣、走路動畫、遠端人物平滑移動、手機跟隨鏡頭、心願卡與補運特效
+- reference/：使用者提供的人物參考圖，僅供對照，不會部署到網站
 - public/art/temple-courtyard.webp：原創古風庭院背景（約 708 KB）
 - src/firebase.ts：Firebase 初始化、可選本機 Emulator
-- src/fortunes.ts：12 主題 × 5 段原創鼓勵共 60 支籤
+- src/fortunes.ts：60 支各自獨立的原創暖心籤（籤詩、白話解釋、鼓勵、今日小行動）
 - src/style.css：手機與桌面版面
 - database.rules.json：預設拒絕的 RTDB 規則
 - tests/rules.test.mjs：允許、拒絕與雙用戶同步測試
@@ -74,3 +75,13 @@ npm ci --cache /tmp/npm-cache 可避開受限的家目錄快取路徑。
 瀏覽器整合測試：執行 npm run test:browser，會自動啟動 Emulator 與 5174 埠測試伺服器。需要已安裝 Chromium（本機 /usr/bin/chromium 或 Playwright Chromium）。CI 上傳 browser-results 截圖供檢查。此為 Chromium 模擬手機寬度，尚不代表真實 iPhone Safari 驗證。
 
 學生公仔已採藍白制服，短髮／長髮眼鏡造型；靜心與休息使用盤腿合十、閉眼姿勢。胸口直接使用使用者上傳的 public/art/school-emblem.png，僅等比例縮放，不重畫、不染色、不左右翻轉。
+
+## 人物與互動呈現（本次更新）
+- 走路：人物移動時左右搖擺並小跳步，靜止時輕微呼吸；校徽與身體同一個支點，不會位移、染色或翻轉。這是以單張站姿圖做的程序動畫，不是逐格的抬腿動畫。
+- 其他同學的位置每秒約更新 5 次，畫面上以滑行補間，不再一格一格跳。
+- 手機（寬度 700px 以下）只顯示庭院的一部分並跟著自己的人物左右移動，人物約為原本的兩倍大。
+- 人物站姿高度由 76 提高到 100 邏輯像素，頁首加入原始校徽。
+- 祈福樹：送出後心願卡在對話框的樹枝上升起、搖晃，並在庭院的祈福樹上掛一張卡（只有自己看得到，重新整理後消失）。
+- 補運：排隊同學依順位在小屋前排成一列；輪到時依序顯示掃走煩惱、補充勇氣、星光環繞，其他同學可看到掃帚與三顆星環繞；結束後從六張祝福卡中抽一張。
+- 人物造型仍為短髮、長髮兩種。新增造型需要新的透明人物圖，且要修改並重新發布 database.rules.json 的 style 白名單。
+- 本次沒有更動 database.rules.json，不需要重新發布規則。
