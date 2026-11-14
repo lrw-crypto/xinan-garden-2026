@@ -1,4 +1,4 @@
-# 祈福小院
+# 草商輔導寺
 有心誠則靈，努力自有光。
 
 Vite + TypeScript + Phaser 3 + Firebase Authentication / Realtime Database。庭院與人物皆以程式原創繪製，沒有外部圖像素材。匿名登入，不收集真實姓名、Email 或密碼。
