@@ -206,6 +206,16 @@ export class Garden3D{
  this.lantern(g,-2.8,3.2,3.3);this.lantern(g,2.8,3.2,3.3);
  const sign=put(g,new THREE.CircleGeometry(.5,24),new THREE.MeshBasicMaterial({map:signTexture('靜','#fff8ec','#62b6ae')}),0,3.86,2.98,{cast:false});sign.renderOrder=1;
  }
+ // 櫻花樹（祈福樹專用）：粗壯的樹幹，滿樹粉紅花球——「櫻櫻沒帶事」
+ cherryTree(x,z,scale,rand){
+ const g=new THREE.Group();g.position.set(x,0,z);this.scene.add(g);
+ const h=3.4*scale;
+ put(g,cyl(.48*scale,.8*scale,h,10),mat(C.trunk),0,h/2,0,{rz:.08});
+ for(const [dx,dz,rz,rx] of [[.9,0,-.75,0],[-.9,.1,.75,0],[0,.9,0,.75],[.1,-.9,0,-.75]])put(g,cyl(.16*scale,.26*scale,h*.62,6),mat(C.trunk),dx*scale,h*.98,dz*scale,{rz,rx});
+ const n=96,spread=3.8*scale;
+ for(let i=0;i<n;i++){const a=rand()*Math.PI*2,r=Math.sqrt(rand())*spread,y=h+1.4*scale+(rand()-.35)*spread*.6-r*r/spread*.32,k=.78*scale*(.7+rand()*.55);
+ this.blossoms.push([new THREE.Vector3(x+Math.cos(a)*r,y,z+Math.sin(a)*r),k,k,k,7+Math.floor(rand()*3)])}
+ return g}
  // 梅樹（沒事）：近黑色的老幹彎曲多節，枝條曲折、末端有筆直向上的新枝；沒有葉子，
  // 五瓣圓花帶黃色花蕊直接開在枝條上，旁邊還有深紅色的花苞
  plumTree(x,z,scale,rand,big){
@@ -236,7 +246,7 @@ export class Garden3D{
  for(let i=0;i<arms;i++){const a=i/arms*Math.PI*2+lv*1.3+rand()*.4,d=lv===3?0:(1.25-lv*.22)*k;if(d)stick(g,[cx,y-.25*k,0],[cx+Math.cos(a)*d,y,Math.sin(a)*d],.08*k,bark);pad(cx+Math.cos(a)*d,y+.18*k,Math.sin(a)*d,r*k);pad(cx+Math.cos(a+.6)*d*.55,y+.42*k,Math.sin(a+.6)*d*.55,r*k*.7)}});
  return g}
  buildWishTree(rand){
- this.blossoms=[];this.flowers=[];const g=this.plumTree(TREE.x,TREE.z,1.25,rand,true);
+ this.blossoms=[];this.flowers=[];const g=this.cherryTree(TREE.x,TREE.z,1.25,rand);
  put(g,cyl(1.9,2.1,.3,20),mat('#efe3d2'),0,.15,0);put(g,cyl(1.7,1.7,.32,20),mat(C.grass2),0,.16,0,{cast:false});
  for(let i=0;i<12;i++){const a=i/12*Math.PI*2,r=2.4+(i%3)*.5,card=new THREE.Group();card.position.set(Math.cos(a)*r,4.1+(i%2)*.4,Math.sin(a)*r);g.add(card);
  put(card,cyl(.015,.015,.7,4),mat('#d2504a'),0,-.35,0,{cast:false});put(card,box(.34,.56,.04),mat(i%3?'#ffe1ea':'#fff3d6'),0,-.95,0,{ry:a});this.swayers.push({o:card,amp:.16,sp:1.4,ph:i})}
@@ -309,7 +319,7 @@ export class Garden3D{
  // 青松與梅樹交錯種植：輕鬆、沒事
  trees.forEach(([x,z,k],i)=>{if(i%2)this.plumTree(x,z,k*1.15,rand,false);else this.pineTree(x,z,k,rand);SOLIDS.push([x,z,.55])});
  // 梅花（三種紅粉白）與松針雲片（三種綠）各用一個實例化網格畫完
- const geo=ball(1,2),groups=['#f08fb4','#fde3ec','#e2567f','#4f9a6a','#3f8a5e','#6bb37f','#c8325f'].map(c=>new THREE.InstancedMesh(geo,mat(c),this.blossoms.length)),counts=groups.map(()=>0),d=new THREE.Object3D();
+ const geo=ball(1,2),groups=['#f08fb4','#fde3ec','#e2567f','#4f9a6a','#3f8a5e','#6bb37f','#c8325f',C.pink,C.pink2,C.pink3].map(c=>new THREE.InstancedMesh(geo,mat(c),this.blossoms.length)),counts=groups.map(()=>0),d=new THREE.Object3D();
  for(const [p,sx,sy,sz,c] of this.blossoms){d.position.copy(p);d.scale.set(sx,sy,sz);d.updateMatrix();groups[c].setMatrixAt(counts[c]++,d.matrix)}
  groups.forEach((m,i)=>{m.count=counts[i];m.castShadow=true;m.receiveShadow=true;s.add(m)});
  // 梅花：五片圓花瓣合成一個幾何體，三種花色各一個實例化網格；黃色花蕊另成一組
