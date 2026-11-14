@@ -68,7 +68,7 @@
         "$other": {
           ".validate": false
         },
-        ".write": "auth != null && ((!data.exists() && newData.child('uid').val() === auth.uid) || data.child('uid').val() === auth.uid)"
+        ".write": "auth != null && ((!data.exists() && newData.child('uid').val() === auth.uid) || data.child('uid').val() === auth.uid || (!newData.exists() && data.child('createdAt').val() < now - ((now + 28800000) % 86400000)))"
       }
     },
     "privateWishes": {
