@@ -1,11 +1,13 @@
 import Phaser from 'phaser';
+import {schoolEmblemUrl,studentAppearance,type StudentTexture} from './student-appearance';
 export type Player={name:string;color:string;style:string;x:number;y:number;state:string;updatedAt:number;emoji?:string};
 export const spots=[{name:'心願祈福樹',x:270,y:270},{name:'暖心求籤',x:735,y:215},{name:'靜心亭子',x:490,y:170},{name:'補運小屋',x:850,y:365},{name:'休息長椅',x:320,y:405}];
 export class Garden extends Phaser.Scene{
- players:Record<string,Player>={}; uid=''; target?:{x:number;y:number}; moved:(x:number,y:number)=>void=()=>{}; interact:(i:number)=>void=()=>{}; private chars=new Map<string,{container:Phaser.GameObjects.Container;body:Phaser.GameObjects.Image;name:Phaser.GameObjects.Text;status:Phaser.GameObjects.Text;marker:Phaser.GameObjects.Graphics;stars:Phaser.GameObjects.Text;x:number;y:number;movingUntil:number}>();
+ players:Record<string,Player>={}; uid=''; target?:{x:number;y:number}; moved:(x:number,y:number)=>void=()=>{}; interact:(i:number)=>void=()=>{}; private chars=new Map<string,{container:Phaser.GameObjects.Container;body:Phaser.GameObjects.Image;emblem:Phaser.GameObjects.Image;name:Phaser.GameObjects.Text;status:Phaser.GameObjects.Text;marker:Phaser.GameObjects.Graphics;stars:Phaser.GameObjects.Text;x:number;y:number;movingUntil:number}>();
  private reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
  constructor(){super('garden')}
  preload(){
+ this.load.image('school-emblem',schoolEmblemUrl);
  for(const hair of ['short','long'])for(const pose of ['standing','seated'])this.load.image(hair+'-'+pose,import.meta.env.BASE_URL+'art/students/'+hair+'-'+pose+'.webp');
  this.load.image('courtyard',import.meta.env.BASE_URL+'art/temple-courtyard.webp');
  }
@@ -30,16 +32,17 @@ export class Garden extends Phaser.Scene{
  const container=this.add.container(p.x,p.y);
  const marker=this.add.graphics();
  const body=this.add.image(0,0,'short-standing').setOrigin(.5,1);
+ const emblem=this.add.image(0,0,'school-emblem');
  const name=this.add.text(0,-86,'',{fontSize:'12px',color:'#51403f',backgroundColor:'#fff9ed',padding:{x:6,y:3}}).setOrigin(.5);
  const status=this.add.text(0,-109,'',{fontSize:'12px',color:'#6b4560',backgroundColor:'#fff6e9',padding:{x:4,y:2}}).setOrigin(.5);
  const stars=this.add.text(0,-35,'✦',{fontSize:'24px',color:'#ffe28c'}).setOrigin(.5);
- container.add([marker,body,name,status,stars]);
- actor={container,body,name,status,marker,stars,x:p.x,y:p.y,movingUntil:0};this.chars.set(id,actor);
+ container.add([marker,body,emblem,name,status,stars]);
+ actor={container,body,emblem,name,status,marker,stars,x:p.x,y:p.y,movingUntil:0};this.chars.set(id,actor);
  }
  const dx=p.x-actor.x,dy=p.y-actor.y;
  if(Math.abs(dx)+Math.abs(dy)>.2){actor.movingUntil=_t+250;if(Math.abs(dx)>.1)actor.body.setFlipX(dx<0)}
  const seated=p.state==='meditating'||p.state==='resting';
- const key=(p.style==='bear'?'long':'short')+'-'+(seated?'seated':'standing');
+ const key=((p.style==='bear'?'long':'short')+'-'+(seated?'seated':'standing')) as StudentTexture;
  if(this.textures.exists(key)){
  actor.body.setTexture(key);
  const height=seated?57:76;
@@ -47,6 +50,13 @@ export class Garden extends Phaser.Scene{
  }
  const bob=!this.reduceMotion&&!seated&&actor.movingUntil>_t?Math.sin(_t/85)*2:0;
  actor.body.setY(bob);
+ const anchor=studentAppearance[key];
+ const emblemSize=actor.body.displayWidth*anchor.size;
+ actor.emblem.setDisplaySize(emblemSize,emblemSize).setPosition(
+ (anchor.x-.5)*actor.body.displayWidth*(actor.body.flipX?-1:1),
+ (anchor.y-1)*actor.body.displayHeight+bob
+ ).setFlipX(false).setFlipY(false);
+
  actor.marker.clear().fillStyle(0x3e352d,.22).fillEllipse(0,2,seated?42:27,9);
  actor.marker.lineStyle(2,Phaser.Display.Color.HexStringToColor(p.color).color,.9).strokeEllipse(0,4,seated?46:32,12);
  actor.name.setText(p.name).setY(seated?-67:-86);

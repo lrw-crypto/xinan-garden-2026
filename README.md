@@ -73,4 +73,4 @@ npm ci --cache /tmp/npm-cache 可避開受限的家目錄快取路徑。
 
 瀏覽器整合測試：執行 npm run test:browser，會自動啟動 Emulator 與 5174 埠測試伺服器。需要已安裝 Chromium（本機 /usr/bin/chromium 或 Playwright Chromium）。CI 上傳 browser-results 截圖供檢查。此為 Chromium 模擬手機寬度，尚不代表真實 iPhone Safari 驗證。
 
-學生公仔已採藍白制服，短髮／長髮眼鏡造型；靜心與休息使用盤腿合十、閉眼姿勢。校徽待取得校方原始圖檔後直接覆蓋，暫留白，禁止以 AI 近似徽章代替。
+學生公仔已採藍白制服，短髮／長髮眼鏡造型；靜心與休息使用盤腿合十、閉眼姿勢。胸口直接使用使用者上傳的 public/art/school-emblem.png，僅等比例縮放，不重畫、不染色、不左右翻轉。
