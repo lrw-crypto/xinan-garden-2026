@@ -33,12 +33,11 @@ onValue(ref(database,'players'),snap=>{const all=snap.val()||{};if(all[uid])all[
 onValue(ref(database,'queue'),snap=>{queue=snap.val()||{};processQueue()},fail);
 modal.close();}catch(err){$('#login-error').textContent=String(err);throw err}})});
 scene.interact=openPlace;
-// 點同學送一句打氣的話：選完後選單自動關閉，那句話顯示在對方頭上 5 秒
+// 點同學送一句打氣的話：選完後選單自動關閉，那兩個字顯示在自己頭上 5 秒
 let cheerTimer:ReturnType<typeof setTimeout>|undefined;
-scene.cheer=(to,emoji)=>{if(!uid||!connected)return;safe(async()=>{const mine=ref(database,'players/'+uid);
-// 已發布的舊規則沒有 emojiTo 欄位時會被拒絕，改為只寫 emoji（顯示在自己頭上）
-try{await update(mine,{emoji,emojiTo:to})}catch{await update(mine,{emoji})}
-clearTimeout(cheerTimer);cheerTimer=setTimeout(()=>safe(()=>update(mine,{emoji:null,emojiTo:null})),5000)})};document.querySelectorAll('[data-place]').forEach(b=>b.addEventListener('click',()=>openPlace(Number((b as HTMLElement).dataset.place))));
+scene.cheer=(_to,emoji)=>{if(!uid||!connected)return;safe(async()=>{const mine=ref(database,'players/'+uid);
+await update(mine,{emoji});
+clearTimeout(cheerTimer);cheerTimer=setTimeout(()=>safe(()=>update(mine,{emoji:null})),5000)})};document.querySelectorAll('[data-place]').forEach(b=>b.addEventListener('click',()=>openPlace(Number((b as HTMLElement).dataset.place))));
 function openPlace(i:number){if(!uid){tell('請先完成匿名登入。');return}if(!connected){tell('等待重新連線後再試一次。');return}if(i===0)wish();if(i===1)fortune();if(i===2)meditate();if(i===3)blessing()}
 function wish(){state('praying');show('<h2>🌸 心願祈福樹</h2><p>把希望寫下，也給努力一個方向。</p><div class="branch" id="branch" aria-hidden="true"></div><textarea id="wish" maxlength="120" rows="3" placeholder="120 字以內，請勿填寫姓名、聯絡方式"></textarea><label><select id="privacy"><option value="private">私密・只有自己能讀取</option><option value="public">公開・讓小院陪你一起祝福</option></select></label><button id="send">掛上心願卡</button><div id="wishes"></div>');
 $('#send').onclick=()=>safe(async()=>{const text=($('#wish') as HTMLTextAreaElement).value.trim(),publicWish=($('#privacy') as HTMLSelectElement).value==='public';if(!text||text.length>120||/[<>]|笨蛋|白痴|去死|幹你/.test(text))throw Error('請用溫柔、合適的文字寫下願望');await set(push(ref(database,publicWish?'publicWishes':'privateWishes/'+uid)),{uid,text,createdAt:serverTimestamp()});const hung=document.createElement('span');hung.className='hung';hung.textContent=publicWish?'願':'心';const branch=$('#branch');if(branch){if(branch.children.length>=7)branch.firstElementChild!.remove();hung.style.left=(8+branch.children.length*13)+'%';branch.append(hung)}scene.hangWish();tell('心願已掛上樹梢，願你帶著希望前進。');($('#wish') as HTMLTextAreaElement).value='';});

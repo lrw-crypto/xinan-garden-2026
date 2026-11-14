@@ -1,4 +1,4 @@
-export type Player={name:string;color:string;style:string;x:number;y:number;state:string;updatedAt:number;emoji?:string;emojiTo?:string};
+export type Player={name:string;color:string;style:string;x:number;y:number;state:string;updatedAt:number;emoji?:string};
 type Point={x:number;y:number};
 /** 五個互動點；x、y 為資料庫座標（人物站立的位置）。 */
 export const spots:{name:string;x:number;y:number}[];

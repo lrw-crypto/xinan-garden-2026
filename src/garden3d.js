@@ -411,8 +411,6 @@ export class Garden3D{
  // 跳躍只是自己畫面上的動作，不會同步給別人
  if(this.jump.v||this.jump.y){this.jump.y+=this.jump.v*dt;this.jump.v-=18*dt;if(this.jump.y<=0){this.jump.y=0;this.jump.v=0}}
  }
- // 打氣的話：送給誰就顯示在誰的頭上（對方不在線時顯示在自己頭上）
- const cheers={};for(const [id,p] of Object.entries(this.players))if(p.emoji){const to=p.emojiTo&&this.players[p.emojiTo]?p.emojiTo:id;cheers[to]=p.emoji.split(' ').pop()}
  // 所有人物
  const camRight={x:Math.cos(cam.yaw),z:-Math.sin(cam.yaw)};
  for(const [id,p] of Object.entries(this.players)){
@@ -444,7 +442,8 @@ export class Garden3D{
  if(bless){const pulse=this.reduceMotion?1:.85+Math.sin(t*3)*.15,u=a.beam.userData;u.outer.material.opacity=.1*pulse;u.inner.material.opacity=.13*pulse;u.halo.material.opacity=.32*pulse;u.outer.rotation.y=t*.4;u.halo.scale.setScalar(1+Math.sin(t*2)*.06)}
  // 星星沿螺旋緩緩上升並閃爍
  a.stars.forEach((st,i)=>{st.visible=bless;if(!bless)return;const rise=((t*.35+i/8)%1),ang=t*1.6+i*.785,rad=1.15-rise*.35,tw=this.reduceMotion?1:.55+Math.abs(Math.sin(t*5+i*1.7))*.75;st.position.set(Math.cos(ang)*rad,.3+rise*3.4,Math.sin(ang)*rad);st.rotation.y=t*3+i;st.scale.setScalar(tw*(1-rise*.4))});
- const word=cheers[id],status=word||({meditating:'🌿 靜心中',praying:'✨ 祈福中',queue:'🌟 等候中',blessing:'💫 補運中',resting:'🍵 休息中'}[p.state]||'');
+ // 打氣的話顯示在送出者自己的頭上，只留下兩個字
+ const word=p.emoji?p.emoji.split(' ').pop():'',status=word||({meditating:'🌿 靜心中',praying:'✨ 祈福中',queue:'🌟 等候中',blessing:'💫 補運中',resting:'🍵 休息中'}[p.state]||'');
  if(a.name!==p.name){a.name=p.name;a.tag.lastChild.textContent=p.name}if(a.status!==status){a.status=status;a.tag.firstChild.textContent=status;a.tag.firstChild.hidden=!status}a.tag.firstChild.classList.toggle('g3-word',Boolean(word));
  a.h=h;
  }
