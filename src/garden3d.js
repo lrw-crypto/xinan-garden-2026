@@ -70,6 +70,14 @@ function route(from,to){
  const out=[];let at=from,k=0;while(k<cells.length){let far=k;for(let m=cells.length-1;m>k;m--)if(lineFree(at,cells[m])){far=m;break}out.push(cells[far]);at=cells[far];k=far+1}
  return out.length?out:[to]}
 
+// ── 人物分件：站姿圖沿褲腳切成上半身與左右腿，三片共用同一張貼圖，腿繞髖部擺動 ──
+// 數值是各站姿圖的比例座標（cut：褲腳高度；split：兩腿之間；l、r：左右腿的中心）
+const LEGS={'short-standing':{cut:.735,split:.528,l:.478,r:.59},'long-standing':{cut:.735,split:.455,l:.405,r:.515}};
+const STRIDE=.8,SPEED=3.9; // 一步的距離與走路速度（世界單位）；步伐由實際走過的距離推動，腳不會打滑
+function partGeo(u0,u1,v0,v1,px,py){
+ const g=new THREE.PlaneGeometry(u1-u0,v1-v0);g.translate((u0+u1)/2-px,py-(v0+v1)/2,0);
+ g.setAttribute('uv',new THREE.Float32BufferAttribute([u0,1-v0,u1,1-v0,u0,1-v1,u1,1-v1],2));return g}
+
 // ── 小工具 ──
 function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const mats=new Map();
@@ -170,7 +178,7 @@ export class Garden3D{
  put(g,cyl(.02,.02,.5,4),mat('#7a4b3a'),0,.45,0,{cast:false});put(g,cyl(.14,.14,.08,10),mat(C.gold),0,.24,0);
  put(g,ball(.3,2),mat(C.lantern,{emissive:'#ff8a4a',emissiveIntensity:.55}),0,0,0,{s:[1,1.15,1]});put(g,cyl(.14,.14,.08,10),mat(C.gold),0,-.3,0);put(g,cyl(.03,.03,.3,4),mat(C.lantern),0,-.48,0,{cast:false});
  this.swayers.push({o:g,amp:.07,sp:1.1,ph:x+z});return g}
- stoneLamp(x,z){const g=new THREE.Group();g.position.set(x,0,z);this.scene.add(g);
+ stoneLamp(x,z){const g=new THREE.Group();g.position.set(x,0,z);this.scene.add(g);SOLIDS.push([x,z,.45]);
  put(g,cyl(.16,.22,.8,8),mat('#d9cfc4'),0,.4,0);put(g,box(.5,.42,.5),mat('#fff1c2',{emissive:'#ffd27a',emissiveIntensity:.9}),0,1,0);put(g,new THREE.ConeGeometry(.5,.34,4),mat('#cfc3d6'),0,1.38,0,{ry:Math.PI/4})}
  buildPavilion(){
  const g=new THREE.Group();g.position.set(PAV.x,0,PAV.z);this.scene.add(g);g.updateMatrixWorld();
@@ -323,16 +331,18 @@ export class Garden3D{
  const tl=new THREE.TextureLoader(),o=this.opts;
  if(!this.tex){this.tex={};for(const k of Object.keys(o.anchors)){const t=tl.load(o.assetBase+'art/students/'+k+'.webp');t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;this.tex[k]=new THREE.MeshBasicMaterial({map:t,alphaTest:.5,side:THREE.DoubleSide})}
  const e=tl.load(o.emblemUrl);e.colorSpace=THREE.SRGBColorSpace;e.anisotropy=8;this.emblemMat=new THREE.MeshBasicMaterial({map:e,transparent:true,alphaTest:.3});
- this.unit=new THREE.PlaneGeometry(1,1);this.unit.translate(0,.5,0);this.unitC=new THREE.PlaneGeometry(1,1)}
+ this.unit=new THREE.PlaneGeometry(1,1);this.unit.translate(0,.5,0);this.unitC=new THREE.PlaneGeometry(1,1);
+ this.parts={};for(const [k,L] of Object.entries(LEGS))this.parts[k]={upper:partGeo(0,1,0,L.cut+.012,.5,1),legL:partGeo(0,L.split,L.cut-.02,1,L.l,L.cut+.01),legR:partGeo(L.split,1,L.cut-.02,1,L.r,L.cut+.01)}}
  const root=new THREE.Group(),bill=new THREE.Group(),fig=new THREE.Group();
- const body=new THREE.Mesh(this.unit,this.tex['short-standing']),emblem=new THREE.Mesh(this.unitC,this.emblemMat);emblem.renderOrder=2;
- fig.add(body,emblem);bill.add(fig);root.add(bill);
+ // rig 內的座標以「腳底中央」為原點、圖高為 1；body 是上半身（坐姿時是整張圖），兩條腿各自以髖部為支點
+ const rig=new THREE.Group(),body=new THREE.Mesh(this.unit,this.tex['short-standing']),legL=new THREE.Mesh(this.unit,this.tex['short-standing']),legR=new THREE.Mesh(this.unit,this.tex['short-standing']),emblem=new THREE.Mesh(this.unitC,this.emblemMat);emblem.renderOrder=2;
+ body.position.z=.004;rig.add(legL,legR,body);fig.add(rig,emblem);bill.add(fig);root.add(bill);
  const shadow=put(root,new THREE.CircleGeometry(.5,20),new THREE.MeshBasicMaterial({color:'#3e352d',transparent:true,opacity:.2,depthWrite:false}),0,.03,0,{rx:-Math.PI/2,cast:false});
  const ring=put(root,new THREE.RingGeometry(.52,.62,28),new THREE.MeshBasicMaterial({color:'#fff',transparent:true,opacity:.95,depthWrite:false}),0,.04,0,{rx:-Math.PI/2,cast:false});
  const stars=[0,1,2].map(()=>put(root,new THREE.OctahedronGeometry(.16),mat(C.gold,{emissive:'#ffd66b',emissiveIntensity:1}),0,1,0,{cast:false}));
  const tag=document.createElement('div');tag.className='g3-tag';tag.innerHTML='<span class="g3-status" hidden></span><span class="g3-name"></span>';this.labels.append(tag);
  this.scene.add(root);
- a={root,bill,fig,body,emblem,shadow,ring,stars,tag,X:NaN,Z:0,y:0,flip:1,movingUntil:0,seed:this.actors.size*1.7,name:'',status:''};this.actors.set(id,a);return a}
+ a={root,bill,fig,rig,body,legL,legR,phase:0,walk:0,side:1,key:'',emblem,shadow,ring,stars,tag,X:NaN,Z:0,y:0,flip:1,movingUntil:0,seed:this.actors.size*1.7,name:'',status:''};this.actors.set(id,a);return a}
 
  frame(t,dt){
  const cam=this.cam,me=this.players[this.uid];
@@ -344,7 +354,7 @@ export class Garden3D{
  let vx=0,vz=0;const k=this.keys,sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw);
  if(k.size){const f=(k.has('u')?1:0)-(k.has('d')?1:0),r=(k.has('r')?1:0)-(k.has('l')?1:0);vx=-sy*f+cy*r;vz=-cy*f-sy*r;const n=Math.hypot(vx,vz);if(n){vx/=n;vz/=n;this.target=undefined;this.path=undefined;this.pendingSpot=-1;cam.follow=true}}
  else if(this.target){const dx=this.target.x-X,dz=this.target.z-Z,d=Math.hypot(dx,dz);if(d<.15&&this.path?.length){const [x,z]=this.path.shift();this.target={x,z}}else if(d<.15){this.target=undefined;if(this.pendingSpot>=0){const i=this.pendingSpot;this.pendingSpot=-1;this.interact(i)}}else{vx=dx/d;vz=dz/d}}
- if(vx||vz){const step=6*dt;let nx=X+vx*step,nz=Z+vz*step;
+ if(vx||vz){const step=SPEED*dt;let nx=X+vx*step,nz=Z+vz*step;
  if(blocked(nx,nz)){if(!blocked(nx,Z))nz=Z;else if(!blocked(X,nz))nx=X;else{nx=X;nz=Z}}
  if(Math.hypot(nx-X,nz-Z)<step*.2){this.stuck=(this.stuck||0)+dt;if(this.stuck>.5&&this.target){const i=this.pendingSpot;this.target=undefined;this.pendingSpot=-1;if(i>=0&&Math.hypot(X-STAND[i][0],Z-STAND[i][1])<3.2)this.interact(i)}}else this.stuck=0;
  if(nx!==X||nz!==Z){this.pos={x:nx,z:nz};const db=toDb(nx,nz);me.x=db.x;me.y=db.y;this.moved(db.x,db.y)}}
@@ -358,18 +368,24 @@ export class Garden3D{
  const a=this.actor(id),local=id===this.uid;let [tx,tz]=toWorld(p.x,p.y);if(local&&this.pos){tx=this.pos.x;tz=this.pos.z}
  if(Number.isNaN(a.X)){a.X=tx;a.Z=tz}
  const gap=Math.hypot(tx-a.X,tz-a.Z);let nx=tx,nz=tz;
- if(!local&&gap>.05&&gap<12){const step=Math.min(gap,8*dt);nx=a.X+(tx-a.X)/gap*step;nz=a.Z+(tz-a.Z)/gap*step}
- const dx=nx-a.X,dz=nz-a.Z;if(Math.abs(dx)+Math.abs(dz)>.004){a.movingUntil=t+.25;const side=dx*camRight.x+dz*camRight.z;if(Math.abs(side)>.002)a.flip=side<0?-1:1}
+ if(!local&&gap>.05&&gap<12){const step=Math.min(gap,Math.max(gap*5,1.2)*dt);nx=a.X+(tx-a.X)/gap*step;nz=a.Z+(tz-a.Z)/gap*step}
+ const dx=nx-a.X,dz=nz-a.Z;const moved=Math.hypot(dx,dz),speed=dt>0?moved/dt:0;
+ if(moved>.0005){const side=dx*camRight.x+dz*camRight.z;if(Math.abs(side)>moved*.25)a.flip=side<0?-1:1;a.side+=(Math.min(1,Math.abs(side)/moved)-a.side)*Math.min(1,dt*8);a.phase+=moved/STRIDE*Math.PI}
+ a.walk+=((speed>.5?1:0)-a.walk)*Math.min(1,dt*(speed>.5?14:9));
  a.X=nx;a.Z=nz;
  const seated=p.state==='meditating'||p.state==='resting',key=(p.style==='bear'?'long':'short')+'-'+(seated?'seated':'standing'),an=this.opts.anchors[key];
  const h=seated?1.45:1.95,w=h*an.width/an.height,lift=p.state==='resting'?.6:0;
  const gy=groundY(nx,nz)+lift;a.y+=(gy-a.y)*Math.min(1,dt*14);
  a.root.position.set(nx,a.y+(local?this.jump.y:0),nz);
  a.bill.quaternion.copy(this.camera.quaternion);
- a.body.material=this.tex[key];a.body.scale.set(w*a.flip,h,1);
+ if(a.key!==key){a.key=key;const P=this.parts[key];a.body.material=a.legL.material=a.legR.material=this.tex[key];a.legL.visible=a.legR.visible=Boolean(P);
+ if(P){const L=LEGS[key];a.body.geometry=P.upper;a.body.position.set(0,0,.004);a.legL.geometry=P.legL;a.legL.position.set(L.l-.5,1-L.cut-.01,0);a.legR.geometry=P.legR;a.legR.position.set(L.r-.5,1-L.cut-.01,0)}else{a.body.geometry=this.unit;a.body.position.set(0,0,.004)}}
+ a.rig.scale.set(w*a.flip,h,1);
  const es=w*an.size;a.emblem.scale.set(es,es,1);a.emblem.position.set((an.x-.5)*w*a.flip,(1-an.y)*h,.02);
- const walking=!this.reduceMotion&&!seated&&a.movingUntil>t,ph=t*10.5+a.seed;
- a.fig.position.y=walking?Math.abs(Math.sin(ph))*.1:0;a.fig.rotation.z=walking?Math.sin(ph)*.085:0;a.fig.scale.y=walking||this.reduceMotion?1:1+Math.sin(t*1.5+a.seed)*.012;
+ // 走路：兩腿交替。橫向移動時前後擺腿，朝鏡頭或遠離鏡頭時改為交替抬腳；身體每一步輕輕起伏。
+ const k=seated||this.reduceMotion?0:a.walk,sw=Math.sin(a.phase),swing=.5*a.side*k,raise=(.07+.11*(1-a.side))*k;
+ a.legL.rotation.z=sw*swing;a.legR.rotation.z=-sw*swing;a.legL.scale.y=1-Math.max(0,sw)*raise;a.legR.scale.y=1-Math.max(0,-sw)*raise;
+ a.fig.position.y=Math.abs(Math.cos(a.phase))*.035*k;a.fig.rotation.z=sw*.03*k*(1-a.side*.6);a.fig.scale.y=k>.05||this.reduceMotion?1:1+Math.sin(t*1.5+a.seed)*.012;
  const air=local?this.jump.y:0;a.shadow.position.y=.03-air;a.ring.position.y=.04-air;a.shadow.scale.setScalar(seated?1.25:1);a.ring.scale.setScalar(seated?1.25:1);a.ring.material.color.set(p.color);
  const bless=p.state==='blessing';a.stars.forEach((st,i)=>{st.visible=bless;const ang=t*2.6+i*2.094;st.position.set(Math.cos(ang)*.95,h*.55+Math.sin(ang*1.3)*.5,Math.sin(ang)*.95);st.rotation.y=t*3});
  const status=p.emoji||({meditating:'🌿 靜心中',praying:'✨ 祈福中',queue:'🌟 等候中',blessing:'🧹💫 補運中',resting:'🍵 休息中'}[p.state]||'');
