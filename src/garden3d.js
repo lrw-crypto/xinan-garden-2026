@@ -101,7 +101,7 @@ export class Garden3D{
  this.cam={yaw:.5,pitch:.8,dist:host.clientWidth<600?24:27,follow:true,mode:'pan',t:new THREE.Vector3(0,0,6)};
  this.jump={y:0,v:0};this.pendingSpot=-1;this.wishSlot=0;this.swayers=[];this.animated=[];
  host.classList.add('g3');
- host.innerHTML='<canvas class="g3-canvas" aria-label="草商輔導寺 3D 庭院"></canvas><div class="g3-labels"></div><div class="g3-hint"></div><button type="button" class="g3-prompt" hidden></button><div class="g3-cheer" hidden><p></p><div><button type="button" data-cheer="💪 加油">加油</button><button type="button" data-cheer="💛 謝謝">謝謝</button><button type="button" data-cheer="🌷 陪伴">陪伴</button><button type="button" data-cheer="" aria-label="取消">×</button></div></div><div class="g3-swipe" hidden><p></p><div class="g3-pips" aria-hidden="true"></div><button type="button">接引聖光</button></div><div class="g3-hud"><button type="button" data-act="jump" aria-label="跳躍">跳躍</button><button type="button" data-act="home" aria-label="找自己">找自己</button><button type="button" data-act="mode" aria-label="切換拖曳方式">拖曳：平移</button><button type="button" data-act="spin" aria-label="旋轉視角">⟳</button><button type="button" data-act="in" aria-label="放大">＋</button><button type="button" data-act="out" aria-label="縮小">－</button></div>';
+ host.innerHTML='<canvas class="g3-canvas" aria-label="草商輔導寺 3D 庭院"></canvas><div class="g3-labels"></div><div class="g3-hint"></div><button type="button" class="g3-prompt" hidden></button><div class="g3-toast" role="status" hidden></div><div class="g3-cheer" hidden><p></p><div><button type="button" data-cheer="💪 加油">加油</button><button type="button" data-cheer="💛 謝謝">謝謝</button><button type="button" data-cheer="🌷 陪伴">陪伴</button><button type="button" data-cheer="" aria-label="取消">×</button></div></div><div class="g3-swipe" hidden><p></p><div class="g3-pips" aria-hidden="true"></div><button type="button">接引聖光</button></div><div class="g3-hud"><button type="button" data-act="jump" aria-label="跳躍">跳躍</button><button type="button" data-act="home" aria-label="找自己">找自己</button><button type="button" data-act="mode" aria-label="切換拖曳方式">拖曳：平移</button><button type="button" data-act="spin" aria-label="旋轉視角">⟳</button><button type="button" data-act="in" aria-label="放大">＋</button><button type="button" data-act="out" aria-label="縮小">－</button></div>';
  this.canvas=host.querySelector('canvas');this.labels=host.querySelector('.g3-labels');this.prompt=host.querySelector('.g3-prompt');this.hint=host.querySelector('.g3-hint');
  this.hint.textContent=matchMedia('(pointer: coarse)').matches?'點地面走路・拖曳平移・雙指縮放與旋轉':'點地面或 WASD 走路・空白鍵跳躍・E 互動・滾輪縮放・右鍵拖曳旋轉';
  try{this.renderer=new THREE.WebGLRenderer({canvas:this.canvas,antialias:true,powerPreference:'low-power'})}
@@ -407,6 +407,8 @@ export class Garden3D{
  closeCheer(){this.cheerTo=undefined;if(this.cheerBox)this.cheerBox.hidden=true}
  /** 從某個景點走出來，停在它前方的空地（不會再開啟互動）。 */
  walkOut(i){this.walkTo(STAND[i][0],STAND[i][1]+.9)}
+ /** 在庭院上方跳出一則短訊息，幾秒後自動消失。 */
+ toast(text){const el=this.host.querySelector('.g3-toast');el.textContent=text;el.hidden=false;clearTimeout(this.toastTimer);this.toastTimer=setTimeout(()=>{el.hidden=true},3500)}
  /** 停止自動行走（例如被安排坐下或排隊時）。 */
  stop(){this.target=undefined;this.path=undefined;this.pendingSpot=-1}
  doJump(){if(this.jump.y===0&&this.players[this.uid])this.jump.v=6.2}
@@ -448,7 +450,11 @@ export class Garden3D{
  if(vx||vz){const step=SPEED*dt;let nx=X+vx*step,nz=Z+vz*step;
  if(blocked(nx,nz)&&!blocked(X,Z)){if(!blocked(nx,Z))nz=Z;else if(!blocked(X,nz))nx=X;else{nx=X;nz=Z}}
  if(Math.hypot(nx-X,nz-Z)<step*.2){this.stuck=(this.stuck||0)+dt;if(this.stuck>.5&&this.target){const i=this.pendingSpot;this.target=undefined;this.pendingSpot=-1;if(i>=0&&Math.hypot(X-this.spotGoal[0],Z-this.spotGoal[1])<3.2)this.interact(i)}}else this.stuck=0;
- if(nx!==X||nz!==Z){this.pos={x:nx,z:nz};const db=toDb(nx,nz);me.x=db.x;me.y=db.y;this.moved(db.x,db.y)}}
+ // 靜心亭：走進去就自動開始選時間；四個蒲團都有人時進不去
+ const inPav=(x,z)=>Math.abs(x-PAV.x)<3.4&&Math.abs(z-PAV.z)<3.4;let entered=false;
+ if(inPav(nx,nz)&&!inPav(X,Z)&&me.state!=='meditating'){if(this.findSeat())entered=true;else{nx=X;nz=Z;this.stop();if(!this.fullAt||t-this.fullAt>3){this.fullAt=t;this.toast('現在蒲團滿位，請排隊稍等。')}}}
+ if(nx!==X||nz!==Z){this.pos={x:nx,z:nz};const db=toDb(nx,nz);me.x=db.x;me.y=db.y;this.moved(db.x,db.y)}
+ if(entered){this.stop();this.keys.clear();this.interact(2)}}
 
  // 跳躍只是自己畫面上的動作，不會同步給別人
  if(this.jump.v||this.jump.y){this.jump.y+=this.jump.v*dt;this.jump.v-=18*dt;if(this.jump.y<=0){this.jump.y=0;this.jump.v=0}}

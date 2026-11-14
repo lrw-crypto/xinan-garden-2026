@@ -13,6 +13,8 @@ export class Garden3D{
   moved:(x:number,y:number)=>void;
   interact:(index:number)=>void;
   stop():void;
+  /** 在庭院上方跳出一則短訊息。 */
+  toast(text:string):void;
   /** 從第 index 個景點走到它前方的空地。 */
   walkOut(index:number):void;
   /** 找一個空的蒲團；坐滿時回傳 null。 */
