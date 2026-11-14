@@ -9,7 +9,7 @@ document.querySelector('#app')!.innerHTML=`<header><div class="brand"><img class
 const $=(s:string)=>document.querySelector(s) as HTMLElement;
 const modal=$('#modal') as HTMLDialogElement;
 const scene=new Garden3D($('#garden'),{assetBase:import.meta.env.BASE_URL,emblemUrl:schoolEmblemUrl,anchors:studentAppearance});
-let uid='',me:Player,connected=false,lastSent=0,queue:Record<string,{joinedAt:number}>={},queueTimer:ReturnType<typeof setTimeout>|undefined,stageTimer:ReturnType<typeof setInterval>|undefined,blessStart=0,lastQueuePos=-1,breathTimer:ReturnType<typeof setInterval>|undefined;
+let uid='',me:Player,connected=false,lastSent=0,queue:Record<string,{joinedAt:number}>={},queueTimer:ReturnType<typeof setTimeout>|undefined,stageTimer:ReturnType<typeof setInterval>|undefined,blessStart=0,lastQueuePos=-1,awaitingSwipe=false,swipeTimer:ReturnType<typeof setTimeout>|undefined,breathTimer:ReturnType<typeof setInterval>|undefined;
 const tell=(s:string)=>{$('#notice').textContent=s};
 const fail=(e:unknown)=>tell('操作未完成：'+(e instanceof Error?e.message:String(e))+'。若為權限錯誤，請先依 README 發布已測試規則。');
 const safe=(fn:()=>Promise<unknown>)=>void fn().catch(fail);
@@ -41,23 +41,28 @@ function fortune(){show('<h2>🎋 暖心求籤</h2><div class="tube-wrap"><div i
 function meditate(){const c=scene.findSeat('cushion');if(!c){tell('蒲團都坐滿了，稍後再來。');return}place(c.x,c.y);state('meditating');show('<h2>🌿 靜心修行</h2><p>吸氣四秒、吐氣四秒。任何時候都可以停止。</p><div class="breath"></div><div class="actions">'+[30,60,180].map(n=>'<button data-time="'+n+'">'+(n<60?n+' 秒':n/60+' 分鐘')+'</button>').join('')+'</div><p id="clock">已在蒲團上坐好。選擇一段留給自己的時間。</p>');modal.querySelectorAll('[data-time]').forEach(b=>b.addEventListener('click',()=>{if(breathTimer)clearInterval(breathTimer);let remaining=Number((b as HTMLElement).dataset.time);$('#clock').textContent='剩餘 '+remaining+' 秒';breathTimer=setInterval(()=>{remaining--;$('#clock').textContent=remaining?'剩餘 '+remaining+' 秒':'謝謝你，給自己這段安靜的時間。';if(!remaining){clearInterval(breathTimer);breathTimer=undefined}},1000)}))}
 function blessing(){show('<h2>✨ 排隊補運</h2><p>掃走一點煩惱，裝滿一點勇氣。</p><p id="queue-info"></p><div id="queue-line" class="queue-line" aria-label="排隊中的同學"></div><div id="bless-card"></div><div class="actions"><button id="join">排隊補運</button><button id="leave">離開隊伍</button></div><p class="muted">以伺服器時間排序。純前端版本無法保證抵抗惡意插隊；每位同學只能更動自己的紀錄。</p>');$('#join').onclick=()=>safe(async()=>{await onDisconnect(ref(database,'queue/'+uid)).remove();const q=places.queue(1);place(q.x,q.y);state('queue');await runTransaction(ref(database,'queue/'+uid),current=>current||{joinedAt:serverTimestamp()})});$('#leave').onclick=()=>safe(async()=>{await remove(ref(database,'queue/'+uid));state('walking')});processQueue()}
 const blessings=['你不必完美，也能勇敢向前。今天試著肯定自己一次。','煩惱掃一掃，心裡就多出放勇氣的位置。慢慢來，你可以的。','星光記得你每一次的努力。累的時候，記得這裡有人陪你。','勇氣不是不害怕，而是帶著害怕也願意再試一次。','今天的你已經很努力了。回去好好吃飯、好好睡覺。','願你讀書時專心，休息時安心，面對考卷時有一顆平靜的心。'];
-const stageText=()=>{const t=Date.now()-blessStart;return '輪到你了！'+(t<2700?'🧹 聖光灑下，正在掃走煩惱……':t<5400?'💪 正在補充勇氣……':'✨ 星光環繞中……')};
+const stageText=()=>{const t=Date.now()-blessStart;return t<2400?'🧹 聖光灑下，正在掃走煩惱……':t<4800?'💪 正在補充勇氣……':'✨ 星光環繞中……'};
 function place(x:number,y:number){scene.stop();me.x=x;me.y=y;safe(()=>update(ref(database,'players/'+uid),{x,y}))}
 function processQueue(){
 const ordered=Object.entries(queue).sort((a,b)=>a[1].joinedAt-b[1].joinedAt||a[0].localeCompare(b[0]));
 const pos=ordered.findIndex(([id])=>id===uid);
-if($('#queue-info'))$('#queue-info').textContent=pos<0?'目前 '+ordered.length+' 人等候':pos===0?'補運進行中，請看庭院裡的補運台。':'你的順位：'+(pos+1)+' / '+ordered.length;
+if($('#queue-info'))$('#queue-info').textContent=pos<0?'目前 '+ordered.length+' 人等候':pos===0?'補運進行中，請看庭院裡的光苗。':'你的順位：'+(pos+1)+' / '+ordered.length;
 const line=$('#queue-line');
 if(line){line.replaceChildren();ordered.slice(0,8).forEach(([id],n)=>{const el=document.createElement('span');el.className='queue-person'+(id===uid?' me':'');el.textContent=(n+1)+'. '+(scene.players[id]?.name||'同學');line.append(el)})}
 // Waiting students stand in a visible line along the path, nearest the hut first.
 if(pos>0&&pos!==lastQueuePos&&me){const q=places.queue(pos);place(q.x,q.y)}
 lastQueuePos=pos;
-if(pos===0&&!queueTimer){
-// 輪到自己：關掉排隊視窗，讓人物站上補運台，看得到聖光與星星
-place(places.hutDoor.x,places.hutDoor.y);state('blessing');blessStart=Date.now();
+if(pos===0&&!queueTimer&&!awaitingSwipe){
+// 輪到自己：關掉排隊視窗，站上補運台，在畫面上滑兩下接引聖光
+awaitingSwipe=true;place(places.hutDoor.x,places.hutDoor.y);state('queue');
 if(modal.open&&$('#queue-info'))modal.close();
-tell(stageText());stageTimer=setInterval(()=>tell(stageText()),400);
-queueTimer=setTimeout(()=>{queueTimer=undefined;clearInterval(stageTimer);safe(async()=>{await remove(ref(database,'queue/'+uid));state('walking');const card=blessings[crypto.getRandomValues(new Uint32Array(1))[0]%blessings.length];tell('✨ 祝福卡：'+card);if(!modal.open)show('<h2>✨ 補運完成</h2><div class="card bless">💫 煩惱輕一點，勇氣多一點。'+card+'</div><p class="muted">帶著這份祝福，慢慢走回自己的路上。</p>')})},8000)}
-if(pos!==0&&queueTimer){clearTimeout(queueTimer);clearInterval(stageTimer);queueTimer=undefined}}
+scene.beginSwipe(2,startLight);
+// 25 秒內沒有滑動就自動開始，避免後面的同學一直等
+swipeTimer=setTimeout(()=>{scene.cancelSwipe();startLight()},25000)}
+if(pos!==0){if(awaitingSwipe){awaitingSwipe=false;clearTimeout(swipeTimer);scene.cancelSwipe()}if(queueTimer){clearTimeout(queueTimer);clearInterval(stageTimer);queueTimer=undefined}}}
+function startLight(){
+if(!awaitingSwipe)return;awaitingSwipe=false;clearTimeout(swipeTimer);
+state('blessing');blessStart=Date.now();tell(stageText());stageTimer=setInterval(()=>tell(stageText()),400);
+queueTimer=setTimeout(()=>{queueTimer=undefined;clearInterval(stageTimer);safe(async()=>{await remove(ref(database,'queue/'+uid));state('walking');const card=blessings[crypto.getRandomValues(new Uint32Array(1))[0]%blessings.length];tell('✨ 祝福卡：'+card);if(!modal.open)show('<h2>✨ 補運完成</h2><div class="card bless">💫 煩惱輕一點，勇氣多一點。'+card+'</div><p class="muted">帶著這份祝福，慢慢走回自己的路上。</p>')})},7000)}
 function bench(){const b=scene.findSeat('bench');if(!b){tell('五張長椅都坐滿了，稍後再來。');return}place(b.x,b.y);state('resting');show('<h2>🍵 溫暖休息長椅</h2><div class="card">你不是成績單上的一個數字。<br>你的善良、好奇與努力，都有自己的光。</div><p>向院子裡的同學送出一點溫暖：</p><div class="actions"><button data-emoji="💪 加油">💪 加油</button><button data-emoji="💛 謝謝">💛 謝謝</button><button data-emoji="🌷 陪伴">🌷 陪伴</button></div>');modal.querySelectorAll('[data-emoji]').forEach(b=>b.addEventListener('click',()=>safe(async()=>{await update(ref(database,'players/'+uid),{emoji:(b as HTMLElement).dataset.emoji});setTimeout(()=>safe(()=>update(ref(database,'players/'+uid),{emoji:null})),5000)})))}
 window.addEventListener('pagehide',()=>{if(uid){void remove(ref(database,'players/'+uid));void remove(ref(database,'queue/'+uid))}});

@@ -17,4 +17,7 @@ export class Garden3D{
   findSeat(kind:'bench'|'cushion'):Point|null;
   goSpot(index:number):void;
   hangWish():void;
+  /** 顯示「滑動接引聖光」提示；滑滿 needed 下（或按按鈕）後呼叫 done。 */
+  beginSwipe(needed:number,done:()=>void):void;
+  cancelSwipe():void;
 }

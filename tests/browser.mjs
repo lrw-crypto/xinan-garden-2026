@@ -12,7 +12,7 @@ for(const p of pages)await p.getByText('2 位同學在線',{exact:false}).waitFo
 const p=pages[0];await p.locator('[data-place="1"]').click();await p.locator('#draw').click();await p.locator('#result .card').waitFor();await p.locator('.close').click();
 await p.locator('[data-place="0"]').click();await p.locator('#wish').fill('每天進步一點點');await p.locator('#send').click();await p.getByText('心願已掛上樹梢',{exact:false}).waitFor();await p.locator('.close').click();
 await pages[1].locator('[data-place="2"]').click();await pages[1].getByRole('button',{name:'30 秒',exact:true}).click();await pages[1].getByText(/^剩餘 \d+ 秒$/).waitFor();await pages[1].locator('.close').click();
-await pages[1].locator('[data-place="3"]').click();await pages[1].locator('#join').click();await pages[1].getByText('輪到你了',{exact:false}).waitFor();await pages[1].getByText('煩惱輕一點',{exact:false}).waitFor({timeout:15000});await pages[1].locator('.close').click();
+await pages[1].locator('[data-place="3"]').click();await pages[1].locator('#join').click();await pages[1].getByText('輪到你了',{exact:false}).waitFor();await pages[1].locator('.g3-swipe button').click();await pages[1].locator('.g3-swipe button').click();await pages[1].getByText('煩惱輕一點',{exact:false}).waitFor({timeout:15000});await pages[1].locator('.close').click();
 for(const page of pages){assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
 for(const page of pages)assert.equal(await page.locator('#garden canvas').count(),1);
 await pages[0].waitForTimeout(1500);
