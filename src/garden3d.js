@@ -14,20 +14,21 @@ const POND={x:4.5,z:3.2,rx:5.6,rz:3.7,bridge:4.9}; // 錦鯉池與拱橋（橋�
 const TREE={x:-14,z:-6};         // 祈福樹
 const EMA={x:-9.2,z:-3.2};       // 繪馬架
 const FORTUNE={x:12.5,z:-10};    // 求籤屋
-const HUT={x:17.6,z:4.2};        // 補運小屋（門朝西）
-const BENCH={x:-12.5,z:8.6};     // 長椅
+const HUT={x:17,z:4.2};          // 補運光苗的根部；莖向西彎，花苞垂在補運台正上方
+const ALTAR={x:13.3,z:4.2};     // 補運台：在光苗花苞的正下方
+const BENCHES=[[-12.5,8.6],[-6.6,11.4],[8.4,11.4],[17.4,-4.6],[-17.2,1.4]]; // 五張長椅，都面向南方，每張三個座位
+const BENCH={x:BENCHES[0][0],z:BENCHES[0][1]};
+const SEAT_DX=[-1.1,0,1.1],CUSHIONS=[[-1.2,-8],[1.2,-8],[-1.2,-10.2],[1.2,-10.2]];
 
 // 站位（世界座標）：人物走到這裡就會開啟互動
-const STAND=[[-11.2,-1.2],[12.5,-6.6],[0,-4.2],[14.4,4.2],[-12.5,10.2]];
-const NAMES=['心願祈福樹','暖心求籤','靜心亭子','補運小屋','休息長椅'];
-const TAG_AT=[[-11.5,5.2,-4.5],[12.5,5.6,-10],[0,7.4,-9],[17.6,5,4.2],[-12.5,2.6,8.6]];
+const STAND=[[-11.2,-1.2],[12.5,-6.6],[0,-4.2],[13.3,6.3],[-12.5,10.2]];
+const NAMES=['心願祈福樹','暖心求籤','靜心亭子','補運光苗','休息長椅'];
+const TAG_AT=[[-11.5,5.2,-4.5],[12.5,5.6,-10],[0,7.4,-9],[15.6,9.6,4.2],[-12.5,2.6,8.6]];
 export const spots=NAMES.map((name,i)=>({name,...toDb(STAND[i][0],STAND[i][1])}));
 export const places={
  spawn:toDb(0,10),
- cushions:[[-1.2,-8],[1.2,-8],[-1.2,-10.2],[1.2,-10.2]].map(([X,Z])=>toDb(PAV.x+X,Z)),
- bench:[toDb(BENCH.x-.3,BENCH.z+.5),toDb(BENCH.x+.8,BENCH.z+.5)],
- hutDoor:toDb(15.5,4.2),
- queue:i=>toDb(14.4,5.6+Math.min(i,6)*1.25)
+ hutDoor:toDb(ALTAR.x,ALTAR.z),
+ queue:i=>toDb(ALTAR.x,ALTAR.z+1.5+Math.min(i,6)*1.25)
 };
 
 // ── 地形高度與碰撞 ──
@@ -38,7 +39,8 @@ function groundY(X,Z){
  if(Math.abs(X-POND.x)<1.15)return bridgeY(Z);
  return 0;
 }
-const SOLIDS=[[TREE.x,TREE.z,1.3],[EMA.x,EMA.z,1.5],[FORTUNE.x,FORTUNE.z,3],[HUT.x+.4,HUT.z,2.5],[BENCH.x,BENCH.z-.35,1.1],[0,-9,.9]];
+const SOLIDS=[[TREE.x,TREE.z,1.3],[EMA.x,EMA.z,1.5],[FORTUNE.x,FORTUNE.z,3],[HUT.x,HUT.z,1.1],[0,-9,.9]];
+for(const [x,z] of BENCHES)SOLIDS.push([x-.85,z-.2,.8],[x+.85,z-.2,.8]);
 function blocked(X,Z){
  if(Math.abs(X)>BOUND.x||Z<BOUND.zMin||Z>BOUND.zMax)return true;
  for(const [x,z,r] of SOLIDS)if((X-x)**2+(Z-z)**2<r*r)return true;
@@ -99,7 +101,7 @@ export class Garden3D{
  this.cam={yaw:.5,pitch:.8,dist:host.clientWidth<600?24:27,follow:true,mode:'pan',t:new THREE.Vector3(0,0,6)};
  this.jump={y:0,v:0};this.pendingSpot=-1;this.wishSlot=0;this.swayers=[];this.animated=[];
  host.classList.add('g3');
- host.innerHTML='<canvas class="g3-canvas" aria-label="草商輔導寺 3D 庭院"></canvas><div class="g3-labels"></div><div class="g3-hint"></div><button type="button" class="g3-prompt" hidden></button><div class="g3-hud"><button type="button" data-act="jump" aria-label="跳躍">跳躍</button><button type="button" data-act="home" aria-label="找自己">找自己</button><button type="button" data-act="mode" aria-label="切換拖曳方式">拖曳：平移</button><button type="button" data-act="spin" aria-label="旋轉視角">⟳</button><button type="button" data-act="in" aria-label="放大">＋</button><button type="button" data-act="out" aria-label="縮小">－</button></div>';
+ host.innerHTML='<canvas class="g3-canvas" aria-label="草商輔導寺 3D 庭院"></canvas><div class="g3-labels"></div><div class="g3-hint"></div><button type="button" class="g3-prompt" hidden></button><div class="g3-swipe" hidden><p></p><div class="g3-pips" aria-hidden="true"></div><button type="button">接引聖光</button></div><div class="g3-hud"><button type="button" data-act="jump" aria-label="跳躍">跳躍</button><button type="button" data-act="home" aria-label="找自己">找自己</button><button type="button" data-act="mode" aria-label="切換拖曳方式">拖曳：平移</button><button type="button" data-act="spin" aria-label="旋轉視角">⟳</button><button type="button" data-act="in" aria-label="放大">＋</button><button type="button" data-act="out" aria-label="縮小">－</button></div>';
  this.canvas=host.querySelector('canvas');this.labels=host.querySelector('.g3-labels');this.prompt=host.querySelector('.g3-prompt');this.hint=host.querySelector('.g3-hint');
  this.hint.textContent=matchMedia('(pointer: coarse)').matches?'點地面走路・拖曳平移・雙指縮放與旋轉':'點地面或 WASD 走路・空白鍵跳躍・E 互動・滾輪縮放・右鍵拖曳旋轉';
  try{this.renderer=new THREE.WebGLRenderer({canvas:this.canvas,antialias:true,powerPreference:'low-power'})}
@@ -235,20 +237,32 @@ export class Garden3D{
  for(const sx of [-1,1]){put(g,cyl(.34,.28,.5,10),mat('#d98a66'),sx*3.3,.25,d+.3);for(let i=0;i<3;i++){put(g,cyl(.07,.07,1.7+i*.35,6),mat(C.leaf),sx*3.3+(i-1)*.16,1.2+i*.17,d+.3);put(g,ball(.2,0),mat(C.leaf2),sx*3.3+(i-1)*.16,2.1+i*.35,d+.3,{s:[1.4,.5,.7]})}}
  }
  buildHut(){
- const g=this.house(HUT.x,HUT.z,-Math.PI/2,3.8,3.4,2.5,'福',C.gold),d=1.7;
- put(g,box(1.5,1.9,.2),mat('#ffe3a0',{emissive:'#ffcf70',emissiveIntensity:.85}),0,1.25,d+.02,{cast:false});
- put(g,cyl(.75,.75,.2,20,1),mat('#ffe3a0',{emissive:'#ffcf70',emissiveIntensity:.85}),0,2.2,d+.02,{rx:Math.PI/2,cast:false});
- for(const sx of [-1,1])put(g,box(.16,2.3,.3),mat(C.woodDark),sx*.85,1.45,d+.05);
- for(let i=0;i<5;i++){const st=put(g,new THREE.OctahedronGeometry(.16),mat(C.gold,{emissive:'#ffd66b',emissiveIntensity:.8}),-1.4+i*.7,3.2+(i%2)*.35,d+.5);this.animated.push(t=>{st.rotation.y=t*1.5+i;st.position.y=3.2+(i%2)*.35+Math.sin(t*2+i)*.08})}
+ // 補運光苗：原創設計的大花苗。淡綠色的莖從地面長出後向補運台彎下，末端是一朵會發光的蓮花苞。
+ const g=new THREE.Group();g.position.set(HUT.x,0,HUT.z);this.scene.add(g);this.sprout=g;
+ const pts=[[0,0,0],[.25,2.2,0],[.1,4.6,0],[-.7,6.9,0],[-2.2,8.3,0],[-3.4,8.3,0],[-3.7,7.7,0]].map(p=>new THREE.Vector3(...p));
+ const stem=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),40,.3,10),mat('#bfe9d0'));stem.castShadow=true;g.add(stem);
+ put(g,cyl(1.5,1.7,.3,24),mat('#efe3d2'),0,.15,0);put(g,cyl(1.3,1.3,.34,24),mat(C.grass2),0,.16,0,{cast:false});
+ const leaf=(x,y,z,ry,rz,k)=>put(g,ball(1,2),mat('#8fd6aa'),x,y,z,{s:[1.5*k,.16*k,.62*k],ry,rz});
+ leaf(1.2,1,.3,.3,.5,1);leaf(-1.1,.8,-.3,2.9,.45,.9);leaf(1.05,3.6,0,0,.6,.7);leaf(-.75,5.3,.1,3.1,.5,.6);
+ for(let i=0;i<9;i++){const a=i/9*Math.PI*2;put(g,ball(.16,1),mat([C.pink3,'#fff3d6','#c9b3ee'][i%3]),Math.cos(a)*1.15,.42,Math.sin(a)*1.15,{cast:false})}
+ const bud=new THREE.Group();bud.position.set(-3.7,7.5,0);g.add(bud);this.bud=bud;
+ this.budMat=new THREE.MeshStandardMaterial({color:'#fff4c4',emissive:'#ffd76a',emissiveIntensity:.7,roughness:.5});
+ const core=new THREE.Mesh(ball(.55,2),this.budMat);core.scale.set(1,1.15,1);bud.add(core);
+ for(let i=0;i<7;i++){const a=i/7*Math.PI*2,pt=put(bud,ball(.42,1),mat('#ffd9e6',{emissive:'#ffb3cf',emissiveIntensity:.25}),Math.cos(a)*.5,.12,Math.sin(a)*.5,{s:[.55,1.1,.3],ry:-a+Math.PI/2});pt.rotation.z=.45}
+ put(bud,cyl(.34,.2,.3,10),mat('#8fd6aa'),0,.72,0);
+ for(let i=0;i<6;i++){const st=put(g,new THREE.OctahedronGeometry(.15),mat(C.gold,{emissive:'#ffd66b',emissiveIntensity:.8}),0,0,0,{cast:false});this.animated.push(t=>{const a=t*.8+i*1.047;st.position.set(-3.7+Math.cos(a)*1.3,7.5+Math.sin(t*2+i)*.35,Math.sin(a)*1.3);st.rotation.y=t*2})}
  // 排隊的小地墊
- for(let i=0;i<5;i++)put(this.scene,cyl(.42,.42,.04,14),mat(i?'#fbe2ea':'#ffe9a8'),14.4,.03,5.6+(i-1)*1.25+(i?0:-.15),{cast:false});
+ for(let i=1;i<=5;i++)put(this.scene,cyl(.42,.42,.04,14),mat('#fbe2ea'),ALTAR.x,.03,ALTAR.z+1.5+i*1.25,{cast:false});
+ // 補運台：金色圓台，外圈一圈小星
+ put(this.scene,cyl(1.25,1.35,.14,28),mat('#fff1c9'),ALTAR.x,.07,ALTAR.z,{cast:false});put(this.scene,cyl(.95,.95,.16,28),mat('#ffe08a',{emissive:'#ffd466',emissiveIntensity:.45}),ALTAR.x,.08,ALTAR.z,{cast:false});
+ for(let i=0;i<8;i++){const a=i/8*Math.PI*2;put(this.scene,new THREE.OctahedronGeometry(.09),mat(C.gold,{emissive:'#ffd66b',emissiveIntensity:.7}),ALTAR.x+Math.cos(a)*1.12,.2,ALTAR.z+Math.sin(a)*1.12,{cast:false})}
  }
  buildBench(){
- const g=new THREE.Group();g.position.set(BENCH.x,0,BENCH.z);this.scene.add(g);
- put(g,box(2.8,.16,.9),mat(C.wood),0,.6,0);put(g,box(2.8,.8,.14),mat(C.wood),0,1.15,-.42,{rx:-.12});
- for(const sx of [-1,1]){put(g,box(.16,.6,.8),mat(C.woodDark),sx*1.25,.3,0);put(g,box(.16,.5,.16),mat(C.woodDark),sx*1.32,.95,.3)}
- put(g,box(.8,.05,1),mat(C.pink2),-.95,.7,0);put(g,box(.8,.9,.05),mat(C.pink2),-.95,1.15,-.33,{rx:-.12});
- put(g,cyl(.36,.36,.5,10),mat('#efe3d2'),2.1,.25,-.2);put(g,cyl(.14,.12,.2,10),mat(C.white),2.1,.6,-.2);
+ BENCHES.forEach(([x,z],n)=>{const g=new THREE.Group();g.position.set(x,0,z);this.scene.add(g);
+ put(g,box(3.5,.16,.9),mat(C.wood),0,.6,0);put(g,box(3.5,.8,.14),mat(C.wood),0,1.15,-.42,{rx:-.12});
+ for(const sx of [-1,1]){put(g,box(.16,.6,.8),mat(C.woodDark),sx*1.6,.3,0);put(g,box(.16,.5,.16),mat(C.woodDark),sx*1.67,.95,.3)}
+ put(g,box(.5,.9,.05),mat([C.pink2,'#fff3d6','#d8c4ee'][n%3]),-1.45,1.17,-.33,{rx:-.12});
+ if(n===0){put(g,cyl(.36,.36,.5,10),mat('#efe3d2'),2.4,.25,-.2);put(g,cyl(.14,.12,.2,10),mat(C.white),2.4,.6,-.2)}});
  }
  buildGate(){
  const g=new THREE.Group();g.position.set(0,0,16.6);this.scene.add(g);this.gate=g;
@@ -301,10 +315,10 @@ export class Garden3D{
  c.addEventListener('pointerdown',e=>{c.setPointerCapture(e.pointerId);this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,t:performance.now(),drag:false,rot:e.button===2||e.shiftKey});if(this.pointers.size===2)this.pinch=pair()});
  c.addEventListener('pointermove',e=>{const p=this.pointers.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
  if(this.pointers.size===2){const now=pair();if(this.pinch){this.cam.dist=clamp(this.cam.dist*this.pinch.d/Math.max(now.d,1),9,46);let da=now.a-this.pinch.a;if(da>Math.PI)da-=2*Math.PI;if(da<-Math.PI)da+=2*Math.PI;this.cam.yaw-=da}this.pinch=now;for(const q of this.pointers.values())q.drag=true;return}
- if(!p.drag&&Math.hypot(e.clientX-p.sx,e.clientY-p.sy)<8)return;p.drag=true;
+ if(!p.drag&&Math.hypot(e.clientX-p.sx,e.clientY-p.sy)<8)return;p.drag=true;if(this.swipe)return;
  if(p.rot||this.cam.mode==='rotate'){this.cam.yaw-=dx*.007;this.cam.pitch=clamp(this.cam.pitch+dy*.004,.35,1.15)}
  else{const k=2*this.cam.dist*Math.tan(this.camera.fov*Math.PI/360)/this.h,sy=Math.sin(this.cam.yaw),cy=Math.cos(this.cam.yaw);this.cam.follow=false;this.cam.t.x+=(-cy*dx-sy*dy/Math.sin(this.cam.pitch))*k;this.cam.t.z+=(sy*dx-cy*dy/Math.sin(this.cam.pitch))*k;this.cam.t.x=clamp(this.cam.t.x,-24,24);this.cam.t.z=clamp(this.cam.t.z,-18,18)}});
- const up=e=>{const p=this.pointers.get(e.pointerId);this.pointers.delete(e.pointerId);this.pinch=undefined;if(!p||p.drag||e.type==='pointercancel'||performance.now()-p.t>600||p.rot)return;const pt=groundAt(e);if(pt)this.walkTo(pt.x,pt.z)};
+ const up=e=>{const p=this.pointers.get(e.pointerId);this.pointers.delete(e.pointerId);this.pinch=undefined;if(p&&this.swipe&&p.drag&&Math.hypot(e.clientX-p.sx,e.clientY-p.sy)>45){this.addSwipe();return}if(!p||p.drag||e.type==='pointercancel'||performance.now()-p.t>600||p.rot)return;const pt=groundAt(e);if(pt)this.walkTo(pt.x,pt.z)};
  c.addEventListener('pointerup',up);c.addEventListener('pointercancel',up);
  c.addEventListener('wheel',e=>{e.preventDefault();this.cam.dist=clamp(this.cam.dist*(e.deltaY>0?1.1:.9),9,46)},{passive:false});
  const typing=()=>document.querySelector('dialog[open]')||/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||'');
@@ -320,7 +334,25 @@ export class Garden3D{
  }
  walkTo(X,Z){const me=this.players[this.uid];if(!me)return;const from=this.pos?[this.pos.x,this.pos.z]:toWorld(me.x,me.y);this.path=route(from,[clamp(X,-BOUND.x,BOUND.x),clamp(Z,BOUND.zMin,BOUND.zMax)]);const [x,z]=this.path.shift();this.target={x,z};this.pendingSpot=-1;this.cam.follow=true;this.stuck=0}
  /** 走到某個互動點，抵達後自動開啟。 */
- goSpot(i){const me=this.players[this.uid];if(!me){this.interact(i);return}const [X,Z]=toWorld(me.x,me.y);if(Math.hypot(X-STAND[i][0],Z-STAND[i][1])<2.4){this.interact(i);return}this.walkTo(STAND[i][0],STAND[i][1]);this.pendingSpot=i}
+ goSpot(i){const me=this.players[this.uid];if(!me){this.interact(i);return}const [X,Z]=toWorld(me.x,me.y);let to=STAND[i];if(i===4)for(const b of BENCHES)if(Math.hypot(b[0]-X,b[1]+1.6-Z)<Math.hypot(to[0]-X,to[1]-Z))to=[b[0],b[1]+1.6];
+ if(Math.hypot(X-to[0],Z-to[1])<2.4){this.interact(i);return}this.walkTo(to[0],to[1]);this.pendingSpot=i;this.spotGoal=to}
+ /** 請玩家在畫面上滑動 needed 下（也可以按按鈕），完成後呼叫 done。滑動期間不會平移或旋轉鏡頭。 */
+ beginSwipe(needed,done){
+ const box=this.host.querySelector('.g3-swipe');this.swipe={needed,count:0,done};box.hidden=false;
+ box.querySelector('p').textContent='輪到你了！在畫面上滑 '+needed+' 下，接引聖光';box.querySelector('button').onclick=()=>this.addSwipe();this.drawPips()}
+ cancelSwipe(){this.swipe=undefined;this.host.querySelector('.g3-swipe').hidden=true}
+ drawPips(){const sw=this.swipe;this.host.querySelector('.g3-pips').textContent=sw?'●'.repeat(sw.count)+'○'.repeat(sw.needed-sw.count):''}
+ addSwipe(){
+ const sw=this.swipe;if(!sw)return;sw.count++;this.drawPips();
+ // 每滑一下，光苗晃一晃、花苞亮一下
+ if(this.ok){const start=performance.now();this.animated.push(()=>{const k=Math.min(1,(performance.now()-start)/700);this.sprout.rotation.z=this.reduceMotion?0:Math.sin(k*18)*(1-k)*.05;this.budMat.emissiveIntensity=.7+(1-k)*1.6;return k<1})}
+ if(sw.count>=sw.needed){this.cancelSwipe();sw.done()}}
+ /** 找一個空位：kind 為 'bench'（五張長椅各三個座位，由近到遠找）或 'cushion'（靜心亭四個蒲團）。坐滿時回傳 null。 */
+ findSeat(kind){
+ const me=this.players[this.uid],[mx,mz]=me?toWorld(me.x,me.y):[0,0],state=kind==='bench'?'resting':'meditating';
+ const seats=kind==='bench'?[...BENCHES].sort((a,b)=>Math.hypot(a[0]-mx,a[1]-mz)-Math.hypot(b[0]-mx,b[1]-mz)).flatMap(([x,z])=>[1,0,2].map(k=>toDb(x+SEAT_DX[k],z+.45))):CUSHIONS.map(([X,Z])=>toDb(PAV.x+X,Z));
+ const taken=p=>Object.entries(this.players).some(([id,o])=>id!==this.uid&&o.state===state&&Math.abs(o.x-p.x)<=8&&Math.abs(o.y-p.y)<=6);
+ return seats.find(p=>!taken(p))||null}
  /** 停止自動行走（例如被安排坐下或排隊時）。 */
  stop(){this.target=undefined;this.path=undefined;this.pendingSpot=-1}
  doJump(){if(this.jump.y===0&&this.players[this.uid])this.jump.v=6.2}
@@ -339,10 +371,15 @@ export class Garden3D{
  body.position.z=.004;rig.add(legL,legR,body);fig.add(rig,emblem);bill.add(fig);root.add(bill);
  const shadow=put(root,new THREE.CircleGeometry(.5,20),new THREE.MeshBasicMaterial({color:'#3e352d',transparent:true,opacity:.2,depthWrite:false}),0,.03,0,{rx:-Math.PI/2,cast:false});
  const ring=put(root,new THREE.RingGeometry(.52,.62,28),new THREE.MeshBasicMaterial({color:'#fff',transparent:true,opacity:.95,depthWrite:false}),0,.04,0,{rx:-Math.PI/2,cast:false});
- const stars=[0,1,2].map(()=>put(root,new THREE.OctahedronGeometry(.16),mat(C.gold,{emissive:'#ffd66b',emissiveIntensity:1}),0,1,0,{cast:false}));
+ const stars=[0,1,2,3,4,5,6,7].map(()=>put(root,new THREE.OctahedronGeometry(.13),mat(C.gold,{emissive:'#ffd66b',emissiveIntensity:1}),0,1,0,{cast:false}));
+ // 聖光：從上方灑下的光柱與腳下的光暈，補運時才顯示
+ const glow=(o,add)=>new THREE.MeshBasicMaterial({color:add?'#fff3b8':'#ffe27a',transparent:true,opacity:o,blending:add?THREE.AdditiveBlending:THREE.NormalBlending,depthWrite:false,side:THREE.DoubleSide,fog:false});
+ const beam=new THREE.Group();beam.visible=false;root.add(beam);
+ const outer=new THREE.Mesh(new THREE.CylinderGeometry(.5,1.35,7,28,1,true),glow(.1)),inner=new THREE.Mesh(new THREE.CylinderGeometry(.2,.8,7,24,1,true),glow(.12)),halo=new THREE.Mesh(new THREE.CircleGeometry(1.5,32),glow(.3,true));
+ outer.position.y=inner.position.y=3.5;halo.rotation.x=-Math.PI/2;halo.position.y=.2;beam.add(outer,inner,halo);beam.userData={outer,inner,halo};
  const tag=document.createElement('div');tag.className='g3-tag';tag.innerHTML='<span class="g3-status" hidden></span><span class="g3-name"></span>';this.labels.append(tag);
  this.scene.add(root);
- a={root,bill,fig,rig,body,legL,legR,phase:0,walk:0,side:1,key:'',emblem,shadow,ring,stars,tag,X:NaN,Z:0,y:0,flip:1,movingUntil:0,seed:this.actors.size*1.7,name:'',status:''};this.actors.set(id,a);return a}
+ a={root,bill,fig,rig,beam,body,legL,legR,phase:0,walk:0,side:1,key:'',emblem,shadow,ring,stars,tag,X:NaN,Z:0,y:0,flip:1,movingUntil:0,seed:this.actors.size*1.7,name:'',status:''};this.actors.set(id,a);return a}
 
  frame(t,dt){
  const cam=this.cam,me=this.players[this.uid];
@@ -355,8 +392,8 @@ export class Garden3D{
  if(k.size){const f=(k.has('u')?1:0)-(k.has('d')?1:0),r=(k.has('r')?1:0)-(k.has('l')?1:0);vx=-sy*f+cy*r;vz=-cy*f-sy*r;const n=Math.hypot(vx,vz);if(n){vx/=n;vz/=n;this.target=undefined;this.path=undefined;this.pendingSpot=-1;cam.follow=true}}
  else if(this.target){const dx=this.target.x-X,dz=this.target.z-Z,d=Math.hypot(dx,dz);if(d<.15&&this.path?.length){const [x,z]=this.path.shift();this.target={x,z}}else if(d<.15){this.target=undefined;if(this.pendingSpot>=0){const i=this.pendingSpot;this.pendingSpot=-1;this.interact(i)}}else{vx=dx/d;vz=dz/d}}
  if(vx||vz){const step=SPEED*dt;let nx=X+vx*step,nz=Z+vz*step;
- if(blocked(nx,nz)){if(!blocked(nx,Z))nz=Z;else if(!blocked(X,nz))nx=X;else{nx=X;nz=Z}}
- if(Math.hypot(nx-X,nz-Z)<step*.2){this.stuck=(this.stuck||0)+dt;if(this.stuck>.5&&this.target){const i=this.pendingSpot;this.target=undefined;this.pendingSpot=-1;if(i>=0&&Math.hypot(X-STAND[i][0],Z-STAND[i][1])<3.2)this.interact(i)}}else this.stuck=0;
+ if(blocked(nx,nz)&&!blocked(X,Z)){if(!blocked(nx,Z))nz=Z;else if(!blocked(X,nz))nx=X;else{nx=X;nz=Z}}
+ if(Math.hypot(nx-X,nz-Z)<step*.2){this.stuck=(this.stuck||0)+dt;if(this.stuck>.5&&this.target){const i=this.pendingSpot;this.target=undefined;this.pendingSpot=-1;if(i>=0&&Math.hypot(X-this.spotGoal[0],Z-this.spotGoal[1])<3.2)this.interact(i)}}else this.stuck=0;
  if(nx!==X||nz!==Z){this.pos={x:nx,z:nz};const db=toDb(nx,nz);me.x=db.x;me.y=db.y;this.moved(db.x,db.y)}}
 
  // 跳躍只是自己畫面上的動作，不會同步給別人
@@ -378,6 +415,8 @@ export class Garden3D{
  const gy=groundY(nx,nz)+lift;a.y+=(gy-a.y)*Math.min(1,dt*14);
  a.root.position.set(nx,a.y+(local?this.jump.y:0),nz);
  a.bill.quaternion.copy(this.camera.quaternion);
+ // 立牌面向鏡頭時頭會往後仰，容易插進椅背或牆面；沿視線把立牌往鏡頭方向挪一點（畫面上的位置與大小幾乎不變），就不會被身後的東西切掉一半
+ const toCam=this.camera.position.clone().sub(a.root.position).normalize();a.bill.position.copy(toCam.multiplyScalar(h*Math.sin(cam.pitch)*.95));
  if(a.key!==key){a.key=key;const P=this.parts[key];a.body.material=a.legL.material=a.legR.material=this.tex[key];a.legL.visible=a.legR.visible=Boolean(P);
  if(P){const L=LEGS[key];a.body.geometry=P.upper;a.body.position.set(0,0,.004);a.legL.geometry=P.legL;a.legL.position.set(L.l-.5,1-L.cut-.01,0);a.legR.geometry=P.legR;a.legR.position.set(L.r-.5,1-L.cut-.01,0)}else{a.body.geometry=this.unit;a.body.position.set(0,0,.004)}}
  a.rig.scale.set(w*a.flip,h,1);
@@ -387,8 +426,11 @@ export class Garden3D{
  a.legL.rotation.z=sw*swing;a.legR.rotation.z=-sw*swing;a.legL.scale.y=1-Math.max(0,sw)*raise;a.legR.scale.y=1-Math.max(0,-sw)*raise;
  a.fig.position.y=Math.abs(Math.cos(a.phase))*.035*k;a.fig.rotation.z=sw*.03*k*(1-a.side*.6);a.fig.scale.y=k>.05||this.reduceMotion?1:1+Math.sin(t*1.5+a.seed)*.012;
  const air=local?this.jump.y:0;a.shadow.position.y=.03-air;a.ring.position.y=.04-air;a.shadow.scale.setScalar(seated?1.25:1);a.ring.scale.setScalar(seated?1.25:1);a.ring.material.color.set(p.color);
- const bless=p.state==='blessing';a.stars.forEach((st,i)=>{st.visible=bless;const ang=t*2.6+i*2.094;st.position.set(Math.cos(ang)*.95,h*.55+Math.sin(ang*1.3)*.5,Math.sin(ang)*.95);st.rotation.y=t*3});
- const status=p.emoji||({meditating:'🌿 靜心中',praying:'✨ 祈福中',queue:'🌟 等候中',blessing:'🧹💫 補運中',resting:'🍵 休息中'}[p.state]||'');
+ const bless=p.state==='blessing';a.beam.visible=bless;
+ if(bless){const pulse=this.reduceMotion?1:.85+Math.sin(t*3)*.15,u=a.beam.userData;u.outer.material.opacity=.1*pulse;u.inner.material.opacity=.13*pulse;u.halo.material.opacity=.32*pulse;u.outer.rotation.y=t*.4;u.halo.scale.setScalar(1+Math.sin(t*2)*.06)}
+ // 星星沿螺旋緩緩上升並閃爍
+ a.stars.forEach((st,i)=>{st.visible=bless;if(!bless)return;const rise=((t*.35+i/8)%1),ang=t*1.6+i*.785,rad=1.15-rise*.35,tw=this.reduceMotion?1:.55+Math.abs(Math.sin(t*5+i*1.7))*.75;st.position.set(Math.cos(ang)*rad,.3+rise*3.4,Math.sin(ang)*rad);st.rotation.y=t*3+i;st.scale.setScalar(tw*(1-rise*.4))});
+ const status=p.emoji||({meditating:'🌿 靜心中',praying:'✨ 祈福中',queue:'🌟 等候中',blessing:'💫 補運中',resting:'🍵 休息中'}[p.state]||'');
  if(a.name!==p.name){a.name=p.name;a.tag.lastChild.textContent=p.name}if(a.status!==status){a.status=status;a.tag.firstChild.textContent=status;a.tag.firstChild.hidden=!status}
  a.h=h;
  }
@@ -397,7 +439,9 @@ export class Garden3D{
  const mine=this.actors.get(this.uid);
  if(mine&&cam.follow){const k=Math.min(1,dt*6);cam.t.x+=(mine.X-cam.t.x)*k;cam.t.z+=(mine.Z-cam.t.z)*k;cam.t.y+=(mine.y-cam.t.y)*k}
  if(this.spinTo!==undefined){cam.yaw+=(this.spinTo-cam.yaw)*Math.min(1,dt*7);if(Math.abs(this.spinTo-cam.yaw)<.005){cam.yaw=this.spinTo;this.spinTo=undefined}}
- const cp=Math.cos(cam.pitch);this.camera.position.set(cam.t.x+Math.sin(cam.yaw)*cp*cam.dist,cam.t.y+1+Math.sin(cam.pitch)*cam.dist,cam.t.z+Math.cos(cam.yaw)*cp*cam.dist);this.camera.lookAt(cam.t.x,cam.t.y+1,cam.t.z);
+ // 自己補運時鏡頭回到人物身上並拉近一些
+ const blessed=me&&me.state==='blessing';if(blessed)cam.follow=true;const want=blessed?Math.min(cam.dist,15):cam.dist;this.distNow=this.distNow===undefined?want:this.distNow+(want-this.distNow)*Math.min(1,dt*4);
+ const cp=Math.cos(cam.pitch),cd=this.distNow;this.camera.position.set(cam.t.x+Math.sin(cam.yaw)*cp*cd,cam.t.y+1+Math.sin(cam.pitch)*cd,cam.t.z+Math.cos(cam.yaw)*cp*cd);this.camera.lookAt(cam.t.x,cam.t.y+1,cam.t.z);
  const cpos=this.camera.position;this.walls.n.visible=cpos.z>-16;this.walls.s.visible=cpos.z<16;this.walls.w.visible=cpos.x>-22;this.walls.e.visible=cpos.x<22;
  // 自己走進或靠近靜心亭時，屋頂變透明，才看得到亭子裡的人
  const underRoof=mine&&Math.hypot(mine.X-PAV.x,mine.Z-PAV.z)<5.2?.18:1;if(Math.abs(underRoof-this.roofOpacity)>.01){this.roofOpacity+=(underRoof-this.roofOpacity)*Math.min(1,dt*6);for(const m of this.pavRoof){m.opacity=this.roofOpacity;m.depthWrite=this.roofOpacity>.9}}
@@ -414,7 +458,7 @@ export class Garden3D{
  for(const a of this.actors.values())place(a.tag,a.root.position.x,a.root.position.y+a.h+.25,a.root.position.z);
  if(!this.spotTags){this.spotTags=NAMES.map((n,i)=>{const b=document.createElement('button');b.type='button';b.className='g3-spot';b.dataset.spot=String(i);b.textContent=['🌸','🎋','🌿','✨','🍵'][i]+' '+n;this.labels.append(b);return b})}
  this.spotTags.forEach((b,i)=>place(b,TAG_AT[i][0],TAG_AT[i][1],TAG_AT[i][2]));
- let near=-1;if(mine){let best=2.6;STAND.forEach(([X,Z],i)=>{const d=Math.hypot(mine.X-X,mine.Z-Z);if(d<best){best=d;near=i}})}
+ let near=-1;const busy=this.players[this.uid]?.state;if(mine&&busy!=='blessing'&&busy!=='queue'){let best=2.6;const check=(X,Z,i)=>{const d=Math.hypot(mine.X-X,mine.Z-Z);if(d<best){best=d;near=i}};STAND.forEach(([X,Z],i)=>check(X,Z,i));if(busy!=='resting')for(const [x,z] of BENCHES)check(x,z+1.2,4)}
  if(near!==this.near){this.near=near;this.prompt.hidden=near<0;if(near>=0)this.prompt.textContent='進入 '+NAMES[near]+(matchMedia('(pointer: coarse)').matches?'':'（E）')}
  }
 }
