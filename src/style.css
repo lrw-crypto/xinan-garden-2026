@@ -130,3 +130,13 @@ footer{margin:0 16px;padding:12px}
 #wish-msg{margin:8px 0;font-size:13px;line-height:1.7;color:#b04a5a}
 #wish-msg:empty{display:none}
 #wish-msg.care{background:#fff3e6;border:1px solid #f0d2a8;color:#7a5326;padding:12px 14px;border-radius:14px;font-size:14px}
+
+/* 登入：人物預覽與造型選擇 */
+.avatar-pick{display:grid;grid-template-columns:200px 1fr;gap:14px;align-items:center;margin:10px 0 14px}
+.avatar-preview{width:200px!important;height:230px!important;border-radius:22px;background:radial-gradient(circle at 50% 35%,#fff8ef,#f6e4ea)}
+.style-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-bottom:10px}
+.style-choice{padding:9px 6px;border-radius:14px;background:#f4ece3;color:#675c49;font-size:14px;border:2px solid transparent}
+.style-choice[aria-pressed="true"]{background:#f6dfe8;color:#8a4c69;border-color:#c98aa8;font-weight:700}
+label.check{display:inline-flex;align-items:center;gap:6px;margin:2px 14px 0 2px;font-size:14px}
+label.check input{width:18px;height:18px}
+@media(max-width:520px){.avatar-pick{grid-template-columns:1fr}.avatar-preview{width:170px!important;height:190px!important;margin:0 auto}.style-grid{grid-template-columns:repeat(4,1fr)}.style-choice{font-size:13px;padding:8px 2px}}

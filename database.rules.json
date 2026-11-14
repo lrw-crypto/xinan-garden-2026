@@ -14,7 +14,7 @@
           ".validate": "newData.val() === '#d398a6' || newData.val() === '#80a891' || newData.val() === '#b4a1cb' || newData.val() === '#c9a560'"
         },
         "style": {
-          ".validate": "newData.val() === 'human' || newData.val() === 'bear'"
+          ".validate": "newData.val() === 'human' || newData.val() === 'bear' || (newData.isString() && newData.val().matches(/^(short|long|pony|spiky|panda|raccoon|bunny)(\\+g)?(\\+f)?$/))"
         },
         "x": {
           ".validate": "newData.isNumber() && newData.val() >= 55 && newData.val() <= 945"

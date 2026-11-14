@@ -3,5 +3,6 @@
 庭院已改為 src/garden3d.js 以程式建模的 3D 場景，不再使用背景圖；舊版 2D 背景 temple-courtyard.webp 已移到 reference/，不再部署。
 
 ## 學生公仔
-students/ 包含短髮、長髮眼鏡同學的站立與盤腿合十靜心姿勢，採藍白運動制服、紅白褲邊及運動鞋。原創生成美術經透明圖格裁切與 WebP 編碼。AI 產生的示意徽章已移除。胸口直接載入使用者上傳的 school-emblem.png（147 × 147），禁止 AI 重畫、自行替代、染色或左右翻轉；僅等比例縮放及依姿勢定位。原始檔 SHA-256：dbcc5e92e6533d4894acc452755b85dda7797d59b94d4fb8208cd9df9acbffe2。
-角色 style 沿用 human（短髮）、bear（長髮）舊識別值以兼容已發布規則及既有瀏覽器資料，不再顯示舊版小熊帽。color 顯示在腳下個人光圈，不更動藍白制服顏色。
+學生已改為 src/student3d.js 以程式建模的 3D 公仔。舊版的透明立牌圖已移到 reference/students/，不再部署。
+
+校徽 school-emblem.png 是使用者提供的原始檔，直接貼在公仔左胸。
