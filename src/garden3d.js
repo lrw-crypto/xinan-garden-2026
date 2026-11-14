@@ -405,6 +405,8 @@ export class Garden3D{
  return best}
  openCheer(id){this.cheerTo=id;this.cheerBox.firstChild.textContent='給「'+this.players[id].name+'」一句打氣';this.cheerBox.hidden=false}
  closeCheer(){this.cheerTo=undefined;if(this.cheerBox)this.cheerBox.hidden=true}
+ /** 從某個景點走出來，停在它前方的空地（不會再開啟互動）。 */
+ walkOut(i){this.walkTo(STAND[i][0],STAND[i][1]+.9)}
  /** 停止自動行走（例如被安排坐下或排隊時）。 */
  stop(){this.target=undefined;this.path=undefined;this.pendingSpot=-1}
  doJump(){if(this.jump.y===0&&this.players[this.uid])this.jump.v=6.2}
