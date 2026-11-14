@@ -28,3 +28,10 @@ button{background:#aa7795}
 @media(max-width:1000px){main{display:block;padding:22px 16px}.places{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));margin-top:18px;padding:12px;gap:8px}.places::before,.places::after{display:none}.places button{font-size:12px;padding:12px 8px;text-align:center}.places span{font-size:10px}}
 @media(max-width:600px){header{padding:14px 12px;gap:8px}h1{font-size:20px;letter-spacing:1px}header small{font-size:9px;letter-spacing:0}#status{font-size:10px;padding:8px 10px}main{padding:20px 9px}.intro{display:block;padding:0 8px;margin-bottom:17px}.intro h2{font-size:23px;letter-spacing:1px}.intro .muted{max-width:none;font-size:12px;margin:10px 0}.intro .muted br{display:none}.eyebrow{font-size:8px;letter-spacing:1px}#garden{border-width:3px;border-radius:18px}.places{grid-template-columns:repeat(3,minmax(0,1fr));padding:9px;border-radius:19px}.places button{font-size:12px;min-height:78px}.places span{font-size:10px}footer{font-size:10px;margin:5px 15px}}
 @media(prefers-reduced-motion:reduce){.places button{transition:none}}
+.student-options{display:flex;gap:14px;justify-content:center;margin:16px 0}
+.student-choice{flex:1;max-width:165px;display:flex;flex-direction:column;align-items:center;gap:9px;background:linear-gradient(140deg,#fff6e7,#f3e8f1);color:#79586c;border:2px solid transparent;padding:12px;border-radius:20px}
+.student-choice img{display:block;width:100%;height:145px;object-fit:contain;filter:drop-shadow(0 5px 4px #5a4f5120)}
+.student-choice span{font-size:12px}
+.student-choice[aria-pressed=true]{border-color:#ac7593;box-shadow:0 0 0 3px #e7cedc66}
+.student-choice:focus-visible{outline:3px solid #517eab;outline-offset:3px}
+@media(max-height:800px){.student-choice img{height:110px}dialog{max-height:90dvh;overflow:auto}.student-options{margin:8px 0}}
