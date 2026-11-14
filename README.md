@@ -1,7 +1,7 @@
-# 祈福小院
+# 草商輔導寺
 有心誠則靈，努力自有光。
 
-Vite + TypeScript + Phaser 3 + Firebase Authentication / Realtime Database。庭院與人物皆以程式原創繪製，沒有外部圖像素材。匿名登入，不收集真實姓名、Email 或密碼。
+Vite + TypeScript + Phaser 3 + Firebase Authentication / Realtime Database。庭院使用為本專案生成的原創卡通美術，學生公仔為原創生成透明素材，由 Phaser 控制移動、姿勢與動態花瓣，沒有複製參考網站素材。匿名登入，不收集真實姓名、Email 或密碼。
 
 ## 本機開發
 需要 Node.js 22+、Java 21（Firebase Emulator）。
@@ -56,7 +56,8 @@ Vite base 已設定 /xinan-garden-2026/。部署不包含 Firebase 規則。
 
 ## 檔案
 - src/main.ts：登入、五項互動、連線、狀態與隊列
-- src/garden.ts：Phaser 庭院繪圖、走路與角色渲染
+- src/garden.ts：Phaser 庭院載入、動態花瓣、走路與角色渲染
+- public/art/temple-courtyard.webp：原創古風庭院背景（約 708 KB）
 - src/firebase.ts：Firebase 初始化、可選本機 Emulator
 - src/fortunes.ts：12 主題 × 5 段原創鼓勵共 60 支籤
 - src/style.css：手機與桌面版面
@@ -71,3 +72,5 @@ Vite base 已設定 /xinan-garden-2026/。部署不包含 Firebase 規則。
 npm ci --cache /tmp/npm-cache 可避開受限的家目錄快取路徑。
 
 瀏覽器整合測試：執行 npm run test:browser，會自動啟動 Emulator 與 5174 埠測試伺服器。需要已安裝 Chromium（本機 /usr/bin/chromium 或 Playwright Chromium）。CI 上傳 browser-results 截圖供檢查。此為 Chromium 模擬手機寬度，尚不代表真實 iPhone Safari 驗證。
+
+學生公仔已採藍白制服，短髮／長髮眼鏡造型；靜心與休息使用盤腿合十、閉眼姿勢。胸口直接使用使用者上傳的 public/art/school-emblem.png，僅等比例縮放，不重畫、不染色、不左右翻轉。

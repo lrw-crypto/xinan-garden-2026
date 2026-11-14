@@ -1,2 +1,41 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;800&display=swap');
 :root{font-family:'Noto Sans TC',sans-serif;color:#554a3b;background:#faf5e8;font-synthesis:none}*{box-sizing:border-box}body{margin:0}button,input,select,textarea{font:inherit}button{cursor:pointer;border:0;border-radius:16px;padding:12px 18px;background:#638a75;color:white;font-weight:600}button:hover{filter:brightness(1.08)}button:disabled{opacity:.55;cursor:wait}input,select,textarea{width:100%;border:1px solid #d8cebb;background:#fffdf7;border-radius:12px;padding:12px;color:#554a3b}label{display:block;margin:14px 0}header{display:flex;align-items:center;justify-content:space-between;padding:16px 5%;border-bottom:1px solid #e9dfca}h1{font-size:23px;margin:0}header small{display:block;font-size:11px;letter-spacing:2px;margin-top:5px}#status{font-size:13px;max-width:48%;text-align:right}main{max-width:1160px;margin:auto;padding:22px}h2{font-size:25px;margin:4px 0 8px}.intro{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.eyebrow{font-size:11px;letter-spacing:3px;color:#8a9b7c}.muted{font-size:13px;color:#827968}#garden{border-radius:28px;overflow:hidden;background:#e9eedb;box-shadow:0 12px 35px #6b715017;touch-action:none}canvas{display:block;width:100%!important;height:auto!important}.places{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:18px}.places button{background:#fffdf7;color:#5b6953;border:1px solid #e4dfce;min-height:74px}.places span{display:block;font-size:11px;margin-top:5px;color:#8b8273}footer{text-align:center;font-size:12px;color:#968a75;padding:25px}dialog{border:1px solid #e2d8c6;border-radius:26px;background:#fffaf0;color:#554a3b;width:min(470px,92vw);padding:26px;box-shadow:0 20px 100px #3334}dialog::backdrop{background:#384b4266;backdrop-filter:blur(5px)}dialog h2{margin-bottom:18px}.close{float:right;background:#eee4d4;color:#675c49;padding:6px 12px}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.card{background:#f5e9db;padding:20px;border-radius:18px;line-height:1.9;margin:16px 0}.wish{padding:12px;border-bottom:1px dashed #d7c4b6;overflow-wrap:anywhere}#notice{min-height:24px;font-size:13px;color:#9b634e}progress{width:100%;accent-color:#82aa91}.shake{animation:shake .15s infinite alternate}@keyframes shake{to{transform:rotate(14deg)}}.breath{width:90px;height:90px;border-radius:50%;background:#b8d4c2;margin:25px auto;animation:breath 8s infinite}@keyframes breath{50%{transform:scale(1.4);background:#e9bfc5}}@media(max-width:600px){main{padding:15px 10px}.intro{padding:0 8px}.intro .muted{max-width:130px}.places{grid-template-columns:repeat(3,1fr);gap:7px}.places button{padding:10px 5px;font-size:13px}h2{font-size:21px}header{padding:14px}header small{letter-spacing:0}dialog{padding:22px}}
+
+/* A warm temple courtyard, framed like an illustrated garden journal. */
+:root{color:#64475a;background:#fff9f3}
+body{background:radial-gradient(ellipse at 8% 0%,#fce4ec88,transparent 40%),radial-gradient(ellipse at 95% 50%,#e0eedc88,transparent 50%),#fffaf5}
+header{background:#fffaf5ed;border-bottom:1px solid #ead8dc;padding:19px 4%;gap:20px}
+h1{color:#84586f;letter-spacing:2px;font-weight:800}
+header small{color:#8c9276;letter-spacing:2px}
+#status{background:#edf3e6;border:1px solid #d8e5cc;color:#54745a;border-radius:24px;padding:10px 17px}
+main{max-width:1480px;padding:30px 28px;display:grid;grid-template-columns:minmax(0,1fr) 238px;column-gap:22px;align-items:start}
+.intro{grid-column:1/-1;padding:0 6px;margin-bottom:24px}
+.intro h2{font-size:29px;color:#715064;letter-spacing:2px;margin-top:9px}
+.eyebrow{color:#a8788c;letter-spacing:2px;font-size:10px;font-weight:600}
+.intro .muted{line-height:1.9;color:#928276}
+#garden{border:6px solid #fffdf7;border-radius:24px;box-shadow:0 12px 45px #87674520,0 0 0 1px #e8d9d1;min-width:0;background:#ecedcc}
+.places{display:flex;flex-direction:column;gap:12px;margin:0;padding:19px 14px;background:#fffafb;border:1px solid #e8d6df;border-radius:23px;box-shadow:0 8px 28px #8867790a}
+.places::before{content:'小院漫遊指南';font-size:19px;font-weight:800;letter-spacing:2px;color:#7d506a;padding:2px 7px 9px}
+.places::after{content:'每一站，都有一份溫柔等著你。';font-size:11px;line-height:1.8;text-align:center;color:#a08a98;padding:8px 0 2px}
+.places button{background:linear-gradient(120deg,#fffaf3,#f7e8f0);color:#794e68;border:1px solid #e9d4df;border-radius:15px;min-height:72px;text-align:left;padding:16px;transition:transform .2s,box-shadow .2s}
+.places button:nth-child(2n){background:linear-gradient(120deg,#fffdf2,#edf3e5)}
+.places button:hover{transform:translateY(-2px);box-shadow:0 7px 15px #89637b18}
+.places span{color:#9d8791;font-weight:400;line-height:1.7}
+#notice{grid-column:1/-1;margin:18px 8px 0}
+footer{border-top:1px solid #efe1dd;line-height:1.9;margin:5px 28px;padding:22px;color:#ac929d}
+dialog{border-color:#dfc5d2;background:#fffbf6}
+button{background:#aa7795}
+@media(max-width:1000px){main{display:block;padding:22px 16px}.places{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));margin-top:18px;padding:12px;gap:8px}.places::before,.places::after{display:none}.places button{font-size:12px;padding:12px 8px;text-align:center}.places span{font-size:10px}}
+@media(max-width:600px){header{padding:14px 12px;gap:8px}h1{font-size:20px;letter-spacing:1px}header small{font-size:9px;letter-spacing:0}#status{font-size:10px;padding:8px 10px}main{padding:20px 9px}.intro{display:block;padding:0 8px;margin-bottom:17px}.intro h2{font-size:23px;letter-spacing:1px}.intro .muted{max-width:none;font-size:12px;margin:10px 0}.intro .muted br{display:none}.eyebrow{font-size:8px;letter-spacing:1px}#garden{border-width:3px;border-radius:18px}.places{grid-template-columns:repeat(3,minmax(0,1fr));padding:9px;border-radius:19px}.places button{font-size:12px;min-height:78px}.places span{font-size:10px}footer{font-size:10px;margin:5px 15px}}
+@media(prefers-reduced-motion:reduce){.places button{transition:none}}
+.student-options{display:flex;gap:14px;justify-content:center;margin:16px 0}
+.student-choice{flex:1;max-width:165px;display:flex;flex-direction:column;align-items:center;gap:9px;background:linear-gradient(140deg,#fff6e7,#f3e8f1);color:#79586c;border:2px solid transparent;padding:12px;border-radius:20px}
+.student-choice img{display:block;width:100%;height:145px;object-fit:contain;filter:drop-shadow(0 5px 4px #5a4f5120)}
+.student-choice span{font-size:12px}
+.student-choice[aria-pressed=true]{border-color:#ac7593;box-shadow:0 0 0 3px #e7cedc66}
+.student-choice:focus-visible{outline:3px solid #517eab;outline-offset:3px}
+@media(max-height:800px){.student-choice img{height:110px}dialog{max-height:90dvh;overflow:auto}.student-options{margin:8px 0}}
+.student-portrait{position:relative;display:block;height:145px;max-width:100%;flex-shrink:0}
+.student-choice .student-body{display:block;width:100%;height:100%;object-fit:fill}
+.student-choice .student-emblem{position:absolute;height:auto;max-width:none;object-fit:contain;transform:translate(-50%,-50%);filter:none;pointer-events:none}
+@media(max-height:800px){.student-portrait{height:110px}}

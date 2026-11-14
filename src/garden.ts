@@ -1,31 +1,71 @@
 import Phaser from 'phaser';
+import {schoolEmblemUrl,studentAppearance,type StudentTexture} from './student-appearance';
 export type Player={name:string;color:string;style:string;x:number;y:number;state:string;updatedAt:number;emoji?:string};
-export const spots=[{name:'心願祈福樹',x:270,y:270},{name:'暖心求籤',x:735,y:250},{name:'靜心亭子',x:490,y:170},{name:'補運小屋',x:790,y:400},{name:'休息長椅',x:350,y:440}];
+export const spots=[{name:'心願祈福樹',x:270,y:270},{name:'暖心求籤',x:735,y:215},{name:'靜心亭子',x:490,y:170},{name:'補運小屋',x:850,y:365},{name:'休息長椅',x:320,y:405}];
 export class Garden extends Phaser.Scene{
- players:Record<string,Player>={}; uid=''; target?:{x:number;y:number}; moved:(x:number,y:number)=>void=()=>{}; interact:(i:number)=>void=()=>{}; private chars=new Map<string,Phaser.GameObjects.Container>();
+ players:Record<string,Player>={}; uid=''; target?:{x:number;y:number}; moved:(x:number,y:number)=>void=()=>{}; interact:(i:number)=>void=()=>{}; private chars=new Map<string,{container:Phaser.GameObjects.Container;body:Phaser.GameObjects.Image;emblem:Phaser.GameObjects.Image;name:Phaser.GameObjects.Text;status:Phaser.GameObjects.Text;marker:Phaser.GameObjects.Graphics;stars:Phaser.GameObjects.Text;x:number;y:number;movingUntil:number}>();
+ private reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
  constructor(){super('garden')}
+ preload(){
+ this.load.image('school-emblem',schoolEmblemUrl);
+ for(const hair of ['short','long'])for(const pose of ['standing','seated'])this.load.image(hair+'-'+pose,import.meta.env.BASE_URL+'art/students/'+hair+'-'+pose+'.webp');
+ this.load.image('courtyard',import.meta.env.BASE_URL+'art/temple-courtyard.webp');
+ }
  create(){
- const g=this.add.graphics();g.fillStyle(0xe4edcf);g.fillEllipse(500,340,930,540);
- for(let i=0;i<35;i++){g.fillStyle(i%2?0xcbdcb9:0xd5e2c0);g.fillCircle(80+(i*137)%840,190+(i*73)%340,3)}
- g.lineStyle(55,0xf7edd6);g.beginPath();g.moveTo(190,420);g.lineTo(460,320);g.lineTo(765,340);g.strokePath();
- for(let i=0;i<16;i++){g.fillStyle(0xd9d2ba);g.fillEllipse(200+i*36,418-i*5,26,13)}
- g.fillStyle(0xabcfc6);g.fillEllipse(560,430,190,85);g.lineStyle(4,0xc7dbb8);g.strokeEllipse(560,430,198,92);
- g.lineStyle(2,0xe1f1df);g.strokeEllipse(550,426,70,15);
- const tree=(x:number,y:number,pink:boolean)=>{g.fillStyle(0x9a7958);g.fillRoundedRect(x-9,y-80,18,90,5);g.fillStyle(pink?0xedb8bf:0xb0c795);g.fillCircle(x,y-105,55);g.fillCircle(x-38,y-88,34);g.fillCircle(x+38,y-88,34);g.fillStyle(pink?0xf6d2d5:0xc5d6a5);g.fillCircle(x-15,y-125,30)};
- tree(140,270,true);tree(270,270,false);tree(880,240,true);tree(100,470,true);
- for(let i=0;i<7;i++){g.fillStyle(i%2?0xedbdad:0xffefd0);g.fillRect(230+i*12,184+(i%3)*16,9,21)}
- const hut=(x:number,y:number,w:number)=>{g.fillStyle(0xa68b65);g.fillRoundedRect(x-w/2,y-65,w,70,5);g.fillStyle(0x745f49);g.fillRect(x-15,y-35,30,40);g.fillStyle(0x819a7c);g.fillTriangle(x-w/2-17,y-65,x+w/2+17,y-65,x,y-117);g.fillStyle(0xe7cda0);g.fillRect(x-w/2+8,y-56,20,22)};
- hut(735,250,95);hut(790,400,115);
- g.fillStyle(0xb89b71);g.fillEllipse(490,175,160,65);g.fillStyle(0x927754);g.fillRect(425,90,8,85);g.fillRect(547,90,8,85);g.fillStyle(0x839a7a);g.fillTriangle(395,95,585,95,490,35);
- for(let i=0;i<3;i++){g.fillStyle(0xe5c5b4);g.fillEllipse(453+i*37,165,28,16)}
- g.fillStyle(0xa58a64);g.fillRoundedRect(307,418,90,17,5);g.fillRect(315,435,7,17);g.fillRect(380,435,7,17);
- spots.forEach((s,i)=>{this.add.text(s.x,s.y+24,s.name,{fontSize:'15px',color:'#665b45',backgroundColor:'#fff8e5',padding:{x:10,y:5}}).setOrigin(.5).setInteractive().on('pointerdown',()=>this.interact(i))});
+ if(this.textures.exists('courtyard'))this.add.image(500,295,'courtyard').setDisplaySize(1000,590);
+ else {this.cameras.main.setBackgroundColor('#e7edd3');this.add.text(500,295,'庭院圖片未載入，請重新整理。',{color:'#62523d',fontSize:'18px'}).setOrigin(.5)}
+ // Gentle foreground petals keep the live scene distinct from its illustrated backdrop.
+ for(let i=0;i<(window.matchMedia('(prefers-reduced-motion: reduce)').matches?0:16);i++){
+ const petal=this.add.ellipse((i*137)%1000,(i*67)%590,5,3,0xffd4e0,.8).setDepth(600);
+ this.tweens.add({targets:petal,x:petal.x+45,y:petal.y+80,alpha:0,duration:5000+i*170,delay:i*150,repeat:-1});
+ }
+ spots.forEach((s,i)=>{this.add.text(s.x,s.y+24,s.name,{fontSize:'14px',fontFamily:'sans-serif',fontStyle:'bold',color:'#6a4057',backgroundColor:'#fff8f1',padding:{x:14,y:8}}).setOrigin(.5).setDepth(650).setInteractive({useHandCursor:true}).on('pointerdown',()=>this.interact(i))});
  this.input.on('pointerdown',(p:Phaser.Input.Pointer,objects:unknown[])=>{if(!objects.length)this.target={x:Phaser.Math.Clamp(p.x,55,945),y:Phaser.Math.Clamp(p.y,235,535)}});
- this.add.text(500,555,'點一下石板路，讓心慢慢走。',{fontSize:'13px',color:'#818767'}).setOrigin(.5);
+ this.add.text(500,555,'點一下石板路，讓心慢慢走。',{fontSize:'13px',color:'#66563f',backgroundColor:'#fff8e9',padding:{x:12,y:5}}).setOrigin(.5);
  }
  update(_t:number,dt:number){
  const me=this.players[this.uid];if(me&&this.target){const d=Phaser.Math.Distance.Between(me.x,me.y,this.target.x,this.target.y);if(d<3)this.target=undefined;else{const step=Math.min(150*dt/1000,d);me.x+=(this.target.x-me.x)/d*step;me.y+=(this.target.y-me.y)/d*step;this.moved(me.x,me.y)}}
- for(const [id,p]of Object.entries(this.players)){let c=this.chars.get(id);if(!c){c=this.add.container(p.x,p.y);this.chars.set(id,c)}c.removeAll(true);const g=this.add.graphics();g.fillStyle(0x69775b,.15);g.fillEllipse(0,7,32,12);g.fillStyle(parseInt(p.color.slice(1),16));g.fillRoundedRect(-11,-24,22,p.state==='walking'?25:17,8);g.fillStyle(0xf6d6b3);g.fillCircle(0,-35,14);g.fillStyle(p.style==='bear'?0x87664e:0x554837);g.fillEllipse(0,-44,28,14);if(p.style==='bear'){g.fillCircle(-12,-49,6);g.fillCircle(12,-49,6)}g.fillStyle(0x514439);g.fillCircle(-5,-35,1.5);g.fillCircle(5,-35,1.5);c.add(g);c.add(this.add.text(0,-75,p.name,{fontSize:'12px',color:'#4f5947',backgroundColor:'#fff8e9',padding:{x:5,y:3}}).setOrigin(.5));if(p.state!=='walking'||p.emoji)c.add(this.add.text(0,-99,p.emoji||({meditating:'🌿 靜心中',praying:'✨ 祈福中',queue:'🌟 等候中',blessing:'💫 補運中',resting:'🍵 休息中'}[p.state]||''),{fontSize:'12px',color:'#695941'}).setOrigin(.5));if(p.state==='blessing'){for(let i=0;i<5;i++){const angle=_t/450+i*1.256;c.add(this.add.text(Math.cos(angle)*26,-25+Math.sin(angle)*22,'✦',{fontSize:'17px',color:'#c69c41'}).setOrigin(.5))}}c.setPosition(p.x,p.y).setDepth(p.y)}
- for(const[id,c]of this.chars)if(!this.players[id]){c.destroy();this.chars.delete(id)}
+
+ for(const [id,p] of Object.entries(this.players)){
+ let actor=this.chars.get(id);
+ if(!actor){
+ const container=this.add.container(p.x,p.y);
+ const marker=this.add.graphics();
+ const body=this.add.image(0,0,'short-standing').setOrigin(.5,1);
+ const emblem=this.add.image(0,0,'school-emblem');
+ const name=this.add.text(0,-86,'',{fontSize:'12px',color:'#51403f',backgroundColor:'#fff9ed',padding:{x:6,y:3}}).setOrigin(.5);
+ const status=this.add.text(0,-109,'',{fontSize:'12px',color:'#6b4560',backgroundColor:'#fff6e9',padding:{x:4,y:2}}).setOrigin(.5);
+ const stars=this.add.text(0,-35,'✦',{fontSize:'24px',color:'#ffe28c'}).setOrigin(.5);
+ container.add([marker,body,emblem,name,status,stars]);
+ actor={container,body,emblem,name,status,marker,stars,x:p.x,y:p.y,movingUntil:0};this.chars.set(id,actor);
+ }
+ const dx=p.x-actor.x,dy=p.y-actor.y;
+ if(Math.abs(dx)+Math.abs(dy)>.2){actor.movingUntil=_t+250;if(Math.abs(dx)>.1)actor.body.setFlipX(dx<0)}
+ const seated=p.state==='meditating'||p.state==='resting';
+ const key=((p.style==='bear'?'long':'short')+'-'+(seated?'seated':'standing')) as StudentTexture;
+ if(this.textures.exists(key)){
+ actor.body.setTexture(key);
+ const height=seated?57:76;
+ actor.body.setDisplaySize(height*actor.body.frame.realWidth/actor.body.frame.realHeight,height);
+ }
+ const bob=!this.reduceMotion&&!seated&&actor.movingUntil>_t?Math.sin(_t/85)*2:0;
+ actor.body.setY(bob);
+ const anchor=studentAppearance[key];
+ const emblemSize=actor.body.displayWidth*anchor.size;
+ actor.emblem.setDisplaySize(emblemSize,emblemSize).setPosition(
+ (anchor.x-.5)*actor.body.displayWidth*(actor.body.flipX?-1:1),
+ (anchor.y-1)*actor.body.displayHeight+bob
+ ).setFlipX(false).setFlipY(false);
+
+ actor.marker.clear().fillStyle(0x3e352d,.22).fillEllipse(0,2,seated?42:27,9);
+ actor.marker.lineStyle(2,Phaser.Display.Color.HexStringToColor(p.color).color,.9).strokeEllipse(0,4,seated?46:32,12);
+ actor.name.setText(p.name).setY(seated?-67:-86);
+ const status=p.emoji||({meditating:'🌿 靜心中',praying:'✨ 祈福中',queue:'🌟 等候中',blessing:'💫 補運中',resting:'🍵 休息中'}[p.state]||'');
+ actor.status.setText(status).setVisible(Boolean(status)).setY(seated?-91:-109);
+ actor.stars.setVisible(p.state==='blessing').setPosition(Math.cos(_t/400)*28,-35+Math.sin(_t/400)*25);
+ actor.container.setPosition(p.x,p.y).setDepth(p.y);
+ actor.x=p.x;actor.y=p.y;
+ }
+ for(const [id,actor] of this.chars)if(!this.players[id]){actor.container.destroy();this.chars.delete(id)}
  }
 }

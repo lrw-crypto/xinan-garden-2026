@@ -6,7 +6,7 @@ try{
 const a=await browser.newContext({viewport:{width:1280,height:900}});
 const b=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
 const pages=await Promise.all([a.newPage(),b.newPage()]);
-for(let i=0;i<2;i++){await pages[i].goto('http://127.0.0.1:5174/xinan-garden-2026/');await pages[i].locator('#name').fill(['測試小光','測試小花'][i]);await pages[i].getByRole('button',{name:'帶著希望進入庭院'}).click();await pages[i].locator('dialog').waitFor({state:'hidden'});}
+for(let i=0;i<2;i++){await pages[i].goto('http://127.0.0.1:5174/xinan-garden-2026/');await pages[i].locator('#name').fill(['測試小光','測試小花'][i]);await pages[i].getByRole('button',{name:i===0?'選擇短髮眼鏡同學':'選擇長髮眼鏡同學'}).click();assert.equal(await pages[i].locator('#style').inputValue(),i===0?'human':'bear');await pages[i].waitForFunction(()=>[...document.querySelectorAll('.student-choice img')].every(img=>img.complete&&img.naturalWidth>0));await pages[i].getByRole('button',{name:'帶著希望進入庭院'}).click();await pages[i].locator('dialog').waitFor({state:'hidden'});}
 for(const p of pages)await p.getByText('2 位同學在線',{exact:false}).waitFor();
 const p=pages[0];await p.locator('[data-place="1"]').click();await p.locator('#draw').click();await p.locator('#result .card').waitFor();await p.locator('.close').click();
 await p.locator('[data-place="0"]').click();await p.locator('#wish').fill('每天進步一點點');await p.locator('#send').click();await p.getByText('心願已掛上樹梢',{exact:false}).waitFor();await p.locator('.close').click();
