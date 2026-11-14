@@ -46,7 +46,7 @@ function place(x:number,y:number){scene.stop();me.x=x;me.y=y;safe(()=>update(ref
 function processQueue(){
 const ordered=Object.entries(queue).sort((a,b)=>a[1].joinedAt-b[1].joinedAt||a[0].localeCompare(b[0]));
 const pos=ordered.findIndex(([id])=>id===uid);
-if($('#queue-info'))$('#queue-info').textContent=pos<0?'目前 '+ordered.length+' 人等候':pos===0?stageText():'你的順位：'+(pos+1)+' / '+ordered.length;
+if($('#queue-info'))$('#queue-info').textContent=pos<0?'目前 '+ordered.length+' 人等候':pos===0?'補運進行中，請看庭院裡的補運台。':'你的順位：'+(pos+1)+' / '+ordered.length;
 const line=$('#queue-line');
 if(line){line.replaceChildren();ordered.slice(0,8).forEach(([id],n)=>{const el=document.createElement('span');el.className='queue-person'+(id===uid?' me':'');el.textContent=(n+1)+'. '+(scene.players[id]?.name||'同學');line.append(el)})}
 // Waiting students stand in a visible line along the path, nearest the hut first.
