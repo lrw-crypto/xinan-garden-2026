@@ -16,7 +16,9 @@ const EMA={x:-9.2,z:-3.2};       // 繪馬架
 const FORTUNE={x:12.5,z:-10};    // 求籤屋
 const HUT={x:17.6,z:4.2};        // 補運小屋（門朝西）
 const ALTAR={x:13.3,z:4.2};     // 補運台：在小屋門外的空地上，人物整個站在戶外，不會被屋子遮住
-const BENCH={x:-12.5,z:8.6};     // 長椅
+const BENCHES=[[-12.5,8.6],[-6.6,11.4],[8.4,11.4],[17.4,-4.6],[-17.2,1.4]]; // 五張長椅，都面向南方，每張三個座位
+const BENCH={x:BENCHES[0][0],z:BENCHES[0][1]};
+const SEAT_DX=[-1.1,0,1.1],CUSHIONS=[[-1.2,-8],[1.2,-8],[-1.2,-10.2],[1.2,-10.2]];
 
 // 站位（世界座標）：人物走到這裡就會開啟互動
 const STAND=[[-11.2,-1.2],[12.5,-6.6],[0,-4.2],[13.3,6.3],[-12.5,10.2]];
@@ -25,8 +27,6 @@ const TAG_AT=[[-11.5,5.2,-4.5],[12.5,5.6,-10],[0,7.4,-9],[17.6,5,4.2],[-12.5,2.6
 export const spots=NAMES.map((name,i)=>({name,...toDb(STAND[i][0],STAND[i][1])}));
 export const places={
  spawn:toDb(0,10),
- cushions:[[-1.2,-8],[1.2,-8],[-1.2,-10.2],[1.2,-10.2]].map(([X,Z])=>toDb(PAV.x+X,Z)),
- bench:[toDb(BENCH.x-.3,BENCH.z+.5),toDb(BENCH.x+.8,BENCH.z+.5)],
  hutDoor:toDb(ALTAR.x,ALTAR.z),
  queue:i=>toDb(ALTAR.x,ALTAR.z+1.5+Math.min(i,6)*1.25)
 };
@@ -39,7 +39,8 @@ function groundY(X,Z){
  if(Math.abs(X-POND.x)<1.15)return bridgeY(Z);
  return 0;
 }
-const SOLIDS=[[TREE.x,TREE.z,1.3],[EMA.x,EMA.z,1.5],[FORTUNE.x,FORTUNE.z,3],[HUT.x+.4,HUT.z,2.5],[BENCH.x,BENCH.z-.35,1.1],[0,-9,.9]];
+const SOLIDS=[[TREE.x,TREE.z,1.3],[EMA.x,EMA.z,1.5],[FORTUNE.x,FORTUNE.z,3],[HUT.x+.4,HUT.z,2.5],[0,-9,.9]];
+for(const [x,z] of BENCHES)SOLIDS.push([x-.85,z-.2,.8],[x+.85,z-.2,.8]);
 function blocked(X,Z){
  if(Math.abs(X)>BOUND.x||Z<BOUND.zMin||Z>BOUND.zMax)return true;
  for(const [x,z,r] of SOLIDS)if((X-x)**2+(Z-z)**2<r*r)return true;
@@ -248,11 +249,11 @@ export class Garden3D{
  for(let i=0;i<8;i++){const a=i/8*Math.PI*2;put(this.scene,new THREE.OctahedronGeometry(.09),mat(C.gold,{emissive:'#ffd66b',emissiveIntensity:.7}),ALTAR.x+Math.cos(a)*1.12,.2,ALTAR.z+Math.sin(a)*1.12,{cast:false})}
  }
  buildBench(){
- const g=new THREE.Group();g.position.set(BENCH.x,0,BENCH.z);this.scene.add(g);
- put(g,box(2.8,.16,.9),mat(C.wood),0,.6,0);put(g,box(2.8,.8,.14),mat(C.wood),0,1.15,-.42,{rx:-.12});
- for(const sx of [-1,1]){put(g,box(.16,.6,.8),mat(C.woodDark),sx*1.25,.3,0);put(g,box(.16,.5,.16),mat(C.woodDark),sx*1.32,.95,.3)}
- put(g,box(.8,.05,1),mat(C.pink2),-.95,.7,0);put(g,box(.8,.9,.05),mat(C.pink2),-.95,1.15,-.33,{rx:-.12});
- put(g,cyl(.36,.36,.5,10),mat('#efe3d2'),2.1,.25,-.2);put(g,cyl(.14,.12,.2,10),mat(C.white),2.1,.6,-.2);
+ BENCHES.forEach(([x,z],n)=>{const g=new THREE.Group();g.position.set(x,0,z);this.scene.add(g);
+ put(g,box(3.5,.16,.9),mat(C.wood),0,.6,0);put(g,box(3.5,.8,.14),mat(C.wood),0,1.15,-.42,{rx:-.12});
+ for(const sx of [-1,1]){put(g,box(.16,.6,.8),mat(C.woodDark),sx*1.6,.3,0);put(g,box(.16,.5,.16),mat(C.woodDark),sx*1.67,.95,.3)}
+ put(g,box(.5,.9,.05),mat([C.pink2,'#fff3d6','#d8c4ee'][n%3]),-1.45,1.17,-.33,{rx:-.12});
+ if(n===0){put(g,cyl(.36,.36,.5,10),mat('#efe3d2'),2.4,.25,-.2);put(g,cyl(.14,.12,.2,10),mat(C.white),2.4,.6,-.2)}});
  }
  buildGate(){
  const g=new THREE.Group();g.position.set(0,0,16.6);this.scene.add(g);this.gate=g;
@@ -324,7 +325,14 @@ export class Garden3D{
  }
  walkTo(X,Z){const me=this.players[this.uid];if(!me)return;const from=this.pos?[this.pos.x,this.pos.z]:toWorld(me.x,me.y);this.path=route(from,[clamp(X,-BOUND.x,BOUND.x),clamp(Z,BOUND.zMin,BOUND.zMax)]);const [x,z]=this.path.shift();this.target={x,z};this.pendingSpot=-1;this.cam.follow=true;this.stuck=0}
  /** 走到某個互動點，抵達後自動開啟。 */
- goSpot(i){const me=this.players[this.uid];if(!me){this.interact(i);return}const [X,Z]=toWorld(me.x,me.y);if(Math.hypot(X-STAND[i][0],Z-STAND[i][1])<2.4){this.interact(i);return}this.walkTo(STAND[i][0],STAND[i][1]);this.pendingSpot=i}
+ goSpot(i){const me=this.players[this.uid];if(!me){this.interact(i);return}const [X,Z]=toWorld(me.x,me.y);let to=STAND[i];if(i===4)for(const b of BENCHES)if(Math.hypot(b[0]-X,b[1]+1.6-Z)<Math.hypot(to[0]-X,to[1]-Z))to=[b[0],b[1]+1.6];
+ if(Math.hypot(X-to[0],Z-to[1])<2.4){this.interact(i);return}this.walkTo(to[0],to[1]);this.pendingSpot=i;this.spotGoal=to}
+ /** 找一個空位：kind 為 'bench'（五張長椅各三個座位，由近到遠找）或 'cushion'（靜心亭四個蒲團）。坐滿時回傳 null。 */
+ findSeat(kind){
+ const me=this.players[this.uid],[mx,mz]=me?toWorld(me.x,me.y):[0,0],state=kind==='bench'?'resting':'meditating';
+ const seats=kind==='bench'?[...BENCHES].sort((a,b)=>Math.hypot(a[0]-mx,a[1]-mz)-Math.hypot(b[0]-mx,b[1]-mz)).flatMap(([x,z])=>[1,0,2].map(k=>toDb(x+SEAT_DX[k],z+.45))):CUSHIONS.map(([X,Z])=>toDb(PAV.x+X,Z));
+ const taken=p=>Object.entries(this.players).some(([id,o])=>id!==this.uid&&o.state===state&&Math.abs(o.x-p.x)<=8&&Math.abs(o.y-p.y)<=6);
+ return seats.find(p=>!taken(p))||null}
  /** 停止自動行走（例如被安排坐下或排隊時）。 */
  stop(){this.target=undefined;this.path=undefined;this.pendingSpot=-1}
  doJump(){if(this.jump.y===0&&this.players[this.uid])this.jump.v=6.2}
@@ -364,8 +372,8 @@ export class Garden3D{
  if(k.size){const f=(k.has('u')?1:0)-(k.has('d')?1:0),r=(k.has('r')?1:0)-(k.has('l')?1:0);vx=-sy*f+cy*r;vz=-cy*f-sy*r;const n=Math.hypot(vx,vz);if(n){vx/=n;vz/=n;this.target=undefined;this.path=undefined;this.pendingSpot=-1;cam.follow=true}}
  else if(this.target){const dx=this.target.x-X,dz=this.target.z-Z,d=Math.hypot(dx,dz);if(d<.15&&this.path?.length){const [x,z]=this.path.shift();this.target={x,z}}else if(d<.15){this.target=undefined;if(this.pendingSpot>=0){const i=this.pendingSpot;this.pendingSpot=-1;this.interact(i)}}else{vx=dx/d;vz=dz/d}}
  if(vx||vz){const step=SPEED*dt;let nx=X+vx*step,nz=Z+vz*step;
- if(blocked(nx,nz)){if(!blocked(nx,Z))nz=Z;else if(!blocked(X,nz))nx=X;else{nx=X;nz=Z}}
- if(Math.hypot(nx-X,nz-Z)<step*.2){this.stuck=(this.stuck||0)+dt;if(this.stuck>.5&&this.target){const i=this.pendingSpot;this.target=undefined;this.pendingSpot=-1;if(i>=0&&Math.hypot(X-STAND[i][0],Z-STAND[i][1])<3.2)this.interact(i)}}else this.stuck=0;
+ if(blocked(nx,nz)&&!blocked(X,Z)){if(!blocked(nx,Z))nz=Z;else if(!blocked(X,nz))nx=X;else{nx=X;nz=Z}}
+ if(Math.hypot(nx-X,nz-Z)<step*.2){this.stuck=(this.stuck||0)+dt;if(this.stuck>.5&&this.target){const i=this.pendingSpot;this.target=undefined;this.pendingSpot=-1;if(i>=0&&Math.hypot(X-this.spotGoal[0],Z-this.spotGoal[1])<3.2)this.interact(i)}}else this.stuck=0;
  if(nx!==X||nz!==Z){this.pos={x:nx,z:nz};const db=toDb(nx,nz);me.x=db.x;me.y=db.y;this.moved(db.x,db.y)}}
 
  // 跳躍只是自己畫面上的動作，不會同步給別人
@@ -387,6 +395,8 @@ export class Garden3D{
  const gy=groundY(nx,nz)+lift;a.y+=(gy-a.y)*Math.min(1,dt*14);
  a.root.position.set(nx,a.y+(local?this.jump.y:0),nz);
  a.bill.quaternion.copy(this.camera.quaternion);
+ // 立牌面向鏡頭時頭會往後仰，容易插進椅背或牆面；沿視線把立牌往鏡頭方向挪一點（畫面上的位置與大小幾乎不變），就不會被身後的東西切掉一半
+ const toCam=this.camera.position.clone().sub(a.root.position).normalize();a.bill.position.copy(toCam.multiplyScalar(h*Math.sin(cam.pitch)*.95));
  if(a.key!==key){a.key=key;const P=this.parts[key];a.body.material=a.legL.material=a.legR.material=this.tex[key];a.legL.visible=a.legR.visible=Boolean(P);
  if(P){const L=LEGS[key];a.body.geometry=P.upper;a.body.position.set(0,0,.004);a.legL.geometry=P.legL;a.legL.position.set(L.l-.5,1-L.cut-.01,0);a.legR.geometry=P.legR;a.legR.position.set(L.r-.5,1-L.cut-.01,0)}else{a.body.geometry=this.unit;a.body.position.set(0,0,.004)}}
  a.rig.scale.set(w*a.flip,h,1);
@@ -428,7 +438,7 @@ export class Garden3D{
  for(const a of this.actors.values())place(a.tag,a.root.position.x,a.root.position.y+a.h+.25,a.root.position.z);
  if(!this.spotTags){this.spotTags=NAMES.map((n,i)=>{const b=document.createElement('button');b.type='button';b.className='g3-spot';b.dataset.spot=String(i);b.textContent=['🌸','🎋','🌿','✨','🍵'][i]+' '+n;this.labels.append(b);return b})}
  this.spotTags.forEach((b,i)=>place(b,TAG_AT[i][0],TAG_AT[i][1],TAG_AT[i][2]));
- let near=-1;const busy=this.players[this.uid]?.state;if(mine&&busy!=='blessing'&&busy!=='queue'){let best=2.6;STAND.forEach(([X,Z],i)=>{const d=Math.hypot(mine.X-X,mine.Z-Z);if(d<best){best=d;near=i}})}
+ let near=-1;const busy=this.players[this.uid]?.state;if(mine&&busy!=='blessing'&&busy!=='queue'){let best=2.6;const check=(X,Z,i)=>{const d=Math.hypot(mine.X-X,mine.Z-Z);if(d<best){best=d;near=i}};STAND.forEach(([X,Z],i)=>check(X,Z,i));if(busy!=='resting')for(const [x,z] of BENCHES)check(x,z+1.2,4)}
  if(near!==this.near){this.near=near;this.prompt.hidden=near<0;if(near>=0)this.prompt.textContent='進入 '+NAMES[near]+(matchMedia('(pointer: coarse)').matches?'':'（E）')}
  }
 }
