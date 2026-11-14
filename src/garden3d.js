@@ -85,6 +85,9 @@ function put(parent,geo,material,x,y,z,o={}){const m=new THREE.Mesh(geo,material
 const box=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
 const cyl=(a,b,h,n=20)=>new THREE.CylinderGeometry(a,b,h,n);
 const ball=(r,d=2)=>new THREE.IcosahedronGeometry(r,d);
+function mergeGeo(list){
+ const pos=[],nor=[];for(const [g0,m] of list){const g=g0.toNonIndexed();g.applyMatrix4(m);pos.push(...g.attributes.position.array);nor.push(...g.attributes.normal.array)}
+ const out=new THREE.BufferGeometry();out.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));out.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));return out}
 function stick(parent,a,b,r,material){const A=new THREE.Vector3(...a),B=new THREE.Vector3(...b),m=put(parent,cyl(r,r,A.distanceTo(B),8),material,(A.x+B.x)/2,(A.y+B.y)/2,(A.z+B.z)/2);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),B.sub(A).normalize());return m}
 function signTexture(text,fg,bg){const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');g.fillStyle=bg;g.beginPath();g.arc(64,64,62,0,7);g.fill();g.fillStyle=fg;g.font='bold 78px "Noto Sans TC",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(text,64,70);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t}
 
@@ -203,15 +206,25 @@ export class Garden3D{
  this.lantern(g,-2.8,3.2,3.3);this.lantern(g,2.8,3.2,3.3);
  const sign=put(g,new THREE.CircleGeometry(.5,24),new THREE.MeshBasicMaterial({map:signTexture('靜','#fff8ec','#62b6ae')}),0,3.86,2.98,{cast:false});sign.renderOrder=1;
  }
- // 梅樹（沒事）：深色枝幹曲折向上，枝條清楚可見，花朵小而疏，沿著枝條開
+ // 梅樹（沒事）：近黑色的老幹彎曲多節，枝條曲折、末端有筆直向上的新枝；沒有葉子，
+ // 五瓣圓花帶黃色花蕊直接開在枝條上，旁邊還有深紅色的花苞
  plumTree(x,z,scale,rand,big){
  const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=big?0:rand()*6;this.scene.add(g);g.updateMatrixWorld();
- const k=scale*(big?1.9:1),bark=mat('#6b4a44'),tips=[];
- const limb=(a,b,r)=>{stick(g,a,b,r,bark);tips.push([a,b])};
- const top=[.25*k,2.1*k,0];limb([0,0,0],top,.3*k);
- const n=big?7:5;for(let i=0;i<n;i++){const a=i/n*Math.PI*2+rand()*.5,len=(1.5+rand()*.7)*k,mid=[top[0]+Math.cos(a)*len*.55,top[1]+len*.45,top[2]+Math.sin(a)*len*.55],end=[mid[0]+Math.cos(a+.5)*len*.55,mid[1]+len*.38,mid[2]+Math.sin(a+.5)*len*.55];
- limb(top,mid,.15*k);limb(mid,end,.09*k);if(i%2===0)limb(mid,[mid[0]+Math.cos(a-.9)*len*.45,mid[1]+len*.3,mid[2]+Math.sin(a-.9)*len*.45],.07*k)}
- for(const [a,b] of tips.slice(1))for(let m=0;m<(big?13:5);m++){const t=.25+rand()*.8,p=new THREE.Vector3(a[0]+(b[0]-a[0])*t+(rand()-.5)*.5*k,a[1]+(b[1]-a[1])*t+(rand()-.3)*.45*k,a[2]+(b[2]-a[2])*t+(rand()-.5)*.5*k);g.localToWorld(p);const r=(.2+rand()*.16)*k*(big?.5:1);this.blossoms.push([p,r,r,r,Math.floor(rand()*3)])}
+ const k=scale*(big?1.9:1),bark=mat('#4d3833'),limbs=[];
+ const limb=(a,b,r,bloom)=>{stick(g,a,b,r,bark);put(g,ball(r*1.25,1),bark,b[0],b[1],b[2]);if(bloom)limbs.push([a,b])};
+ const knee=[.38*k,1.05*k,.12*k],top=[.08*k,2.05*k,-.1*k];limb([0,0,0],knee,.34*k);limb(knee,top,.27*k);put(g,ball(.2*k,1),bark,knee[0]+.22*k,knee[1]-.1*k,knee[2]);
+ const n=big?7:5;for(let i=0;i<n;i++){const a=i/n*Math.PI*2+rand()*.5,len=(1.5+rand()*.7)*k,dir=(a2,d,up)=>[Math.cos(a2)*d,up,Math.sin(a2)*d];
+ const m1=dir(a,len*.5,len*.34),mid=[top[0]+m1[0],top[1]+m1[1],top[2]+m1[2]],e1=dir(a+.75,len*.5,len*.12),end=[mid[0]+e1[0],mid[1]+e1[1],mid[2]+e1[2]];
+ limb(top,mid,.15*k,true);limb(mid,end,.09*k,true);
+ const t1=dir(a-.9,len*.42,len*.22);limb(mid,[mid[0]+t1[0],mid[1]+t1[1],mid[2]+t1[2]],.07*k,true);
+ limb(end,[end[0]+(rand()-.5)*.2*k,end[1]+(.7+rand()*.5)*k,end[2]+(rand()-.5)*.2*k],.045*k,true);limb(mid,[mid[0]+(rand()-.5)*.2*k,mid[1]+(.6+rand()*.4)*k,mid[2]+(rand()-.5)*.2*k],.04*k,true)}
+ const up=new THREE.Vector3(0,1,0);
+ for(const [a,b] of limbs){const A=new THREE.Vector3(...a),B=new THREE.Vector3(...b),axis=B.clone().sub(A).normalize(),count=Math.max(2,Math.round(A.distanceTo(B)/(big?.42:.36)/Math.max(k,1)*1.1));
+ for(let m=0;m<count;m++){const t=(m+.3+rand()*.5)/count,side=new THREE.Vector3(rand()-.5,rand()*.9+.25,rand()-.5).normalize();
+ // 花朵貼著枝條，朝外偏上
+ const normal=side.clone().addScaledVector(axis,-side.dot(axis)).normalize().lerp(up,.35).normalize(),r=(.25+rand()*.1)*(big?1.1:1),p=A.clone().lerp(B,t).addScaledVector(normal,r*.35);
+ g.localToWorld(p);normal.transformDirection(g.matrixWorld);
+ if(rand()<.24)this.blossoms.push([p,r*.36,r*.36,r*.36,6]);else this.flowers.push([p,r,normal,Math.floor(rand()*3),rand()*6])}}
  return g}
  // 青松（輕鬆）：微彎的樹幹，一層層扁平的松針雲片
  pineTree(x,z,scale,rand){
@@ -223,7 +236,7 @@ export class Garden3D{
  for(let i=0;i<arms;i++){const a=i/arms*Math.PI*2+lv*1.3+rand()*.4,d=lv===3?0:(1.25-lv*.22)*k;if(d)stick(g,[cx,y-.25*k,0],[cx+Math.cos(a)*d,y,Math.sin(a)*d],.08*k,bark);pad(cx+Math.cos(a)*d,y+.18*k,Math.sin(a)*d,r*k);pad(cx+Math.cos(a+.6)*d*.55,y+.42*k,Math.sin(a+.6)*d*.55,r*k*.7)}});
  return g}
  buildWishTree(rand){
- this.blossoms=[];const g=this.plumTree(TREE.x,TREE.z,1.25,rand,true);
+ this.blossoms=[];this.flowers=[];const g=this.plumTree(TREE.x,TREE.z,1.25,rand,true);
  put(g,cyl(1.9,2.1,.3,20),mat('#efe3d2'),0,.15,0);put(g,cyl(1.7,1.7,.32,20),mat(C.grass2),0,.16,0,{cast:false});
  for(let i=0;i<12;i++){const a=i/12*Math.PI*2,r=2.4+(i%3)*.5,card=new THREE.Group();card.position.set(Math.cos(a)*r,4.1+(i%2)*.4,Math.sin(a)*r);g.add(card);
  put(card,cyl(.015,.015,.7,4),mat('#d2504a'),0,-.35,0,{cast:false});put(card,box(.34,.56,.04),mat(i%3?'#ffe1ea':'#fff3d6'),0,-.95,0,{ry:a});this.swayers.push({o:card,amp:.16,sp:1.4,ph:i})}
@@ -296,9 +309,15 @@ export class Garden3D{
  // 青松與梅樹交錯種植：輕鬆、沒事
  trees.forEach(([x,z,k],i)=>{if(i%2)this.plumTree(x,z,k*1.15,rand,false);else this.pineTree(x,z,k,rand);SOLIDS.push([x,z,.55])});
  // 梅花（三種紅粉白）與松針雲片（三種綠）各用一個實例化網格畫完
- const geo=ball(1,2),groups=['#f08fb4','#fde3ec','#e2567f','#4f9a6a','#3f8a5e','#6bb37f'].map(c=>new THREE.InstancedMesh(geo,mat(c),this.blossoms.length)),counts=groups.map(()=>0),d=new THREE.Object3D();
+ const geo=ball(1,2),groups=['#f08fb4','#fde3ec','#e2567f','#4f9a6a','#3f8a5e','#6bb37f','#c8325f'].map(c=>new THREE.InstancedMesh(geo,mat(c),this.blossoms.length)),counts=groups.map(()=>0),d=new THREE.Object3D();
  for(const [p,sx,sy,sz,c] of this.blossoms){d.position.copy(p);d.scale.set(sx,sy,sz);d.updateMatrix();groups[c].setMatrixAt(counts[c]++,d.matrix)}
  groups.forEach((m,i)=>{m.count=counts[i];m.castShadow=true;m.receiveShadow=true;s.add(m)});
+ // 梅花：五片圓花瓣合成一個幾何體，三種花色各一個實例化網格；黃色花蕊另成一組
+ const petal=new THREE.SphereGeometry(1,7,4),parts=[];
+ for(let i=0;i<5;i++){const a=i/5*Math.PI*2;d.position.set(Math.cos(a)*.56,.05,Math.sin(a)*.56);d.rotation.set(0,-a,0);d.rotateZ(.32);d.scale.set(.46,.13,.42);d.updateMatrix();parts.push([petal,d.matrix.clone()])}
+ const flowerGeo=mergeGeo(parts),n=Math.max(1,this.flowers.length),fl=['#fff4f6','#f9a8c4','#e8517c'].map(c=>new THREE.InstancedMesh(flowerGeo,mat(c,{roughness:.7}),n)),hearts=new THREE.InstancedMesh(ball(.26,1),mat('#f6c945',{emissive:'#e0a020',emissiveIntensity:.25}),n),fc=[0,0,0],yAxis=new THREE.Vector3(0,1,0),spin=new THREE.Quaternion();
+ this.flowers.forEach(([p,r,normal,c,turn],i)=>{d.position.copy(p);d.quaternion.setFromUnitVectors(yAxis,normal).multiply(spin.setFromAxisAngle(yAxis,turn));d.scale.setScalar(r);d.updateMatrix();fl[c].setMatrixAt(fc[c]++,d.matrix);d.position.addScaledVector(normal,r*.12);d.updateMatrix();hearts.setMatrixAt(i,d.matrix)});
+ fl.forEach((m,i)=>{m.count=fc[i];m.castShadow=true;s.add(m)});hearts.count=this.flowers.length;s.add(hearts);
  const rocks=[[-17,-10.5,1.3],[-16,-11.8,.8],[17,-12,1.2],[9,-12.6,.8],[-20,8,1],[-9.5,5,.75],[20,9.5,1.1],[-3,13.5,.7],[15,12,.9],[-20,-2,.8],[9.6,-2.4,.6],[-17,-9,.6]];
  for(const [x,z,r] of rocks){put(s,ball(r,1),mat(rand()<.5?C.rock:C.rock2),x,r*.45,z,{s:[1.15,.8,1],ry:rand()*3});SOLIDS.push([x,z,r*.9])}
  for(let i=0;i<46;i++){const x=(rand()-.5)*42,z=(rand()-.5)*30;if(blocked(x,z)||Math.hypot(x,z-8.6)<5||Math.abs(x)<2.2)continue;

@@ -120,3 +120,6 @@ footer{margin:0 16px;padding:12px}
 .g3-med b{font-size:14px;color:#4f7a5c}.g3-med p{margin:2px 0 0;font-size:13px;color:#5d6b5c}
 .g3 .g3-med button{background:#e3efe3;color:#4f6b55;padding:7px 14px;border-radius:14px;font-size:13px}
 @media(prefers-reduced-motion:reduce){.g3-status.g3-word{animation:none}}
+
+.intro h2 span{margin-left:1.2em;font-weight:400;color:#8c7a86}
+@media(max-width:600px){.intro h2 span{display:block;margin:2px 0 0;font-size:14px}}
