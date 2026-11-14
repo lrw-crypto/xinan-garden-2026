@@ -1,4 +1,4 @@
-export type Player={name:string;color:string;style:string;x:number;y:number;state:string;updatedAt:number;emoji?:string};
+export type Player={name:string;color:string;style:string;x:number;y:number;state:string;updatedAt:number;emoji?:string;emojiTo?:string};
 type Point={x:number;y:number};
 /** 五個互動點；x、y 為資料庫座標（人物站立的位置）。 */
 export const spots:{name:string;x:number;y:number}[];
@@ -13,8 +13,10 @@ export class Garden3D{
   moved:(x:number,y:number)=>void;
   interact:(index:number)=>void;
   stop():void;
-  /** 找空位（長椅每張三人、共五張；蒲團四個）。坐滿時回傳 null。 */
-  findSeat(kind:'bench'|'cushion'):Point|null;
+  /** 找一個空的蒲團；坐滿時回傳 null。 */
+  findSeat():Point|null;
+  /** 玩家點了某位同學並選了一句打氣的話。 */
+  cheer:(toUid:string,emoji:string)=>void;
   goSpot(index:number):void;
   hangWish():void;
   /** 顯示「滑動接引聖光」提示；滑滿 needed 下（或按按鈕）後呼叫 done。 */

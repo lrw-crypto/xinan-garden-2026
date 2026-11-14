@@ -104,3 +104,19 @@ footer{margin:0 16px;padding:12px}
 .g3-swipe p{margin:0 0 4px;font-size:15px;font-weight:600;color:#7a5a2a}
 .g3-pips{font-size:20px;letter-spacing:8px;color:#e2a83a;margin-bottom:8px}
 .g3 .g3-swipe button{background:#e9b949;color:#5a4012;padding:8px 18px;border-radius:16px;font-size:14px}
+
+/* 點同學打氣的小選單、頭頂的打氣字、靜心倒數面板 */
+.g3-cheer{position:absolute;left:50%;top:14px;transform:translateX(-50%);max-width:92%;text-align:center;background:#fffaf5f5;border:1px solid #ecd3dd;border-radius:20px;padding:10px 14px;box-shadow:0 8px 24px #7a4b5a33;z-index:3}
+.g3-cheer[hidden]{display:none}
+.g3-cheer p{margin:0 0 8px;font-size:14px;font-weight:600;color:#6a4057}
+.g3-cheer div{display:flex;gap:8px;justify-content:center}
+.g3 .g3-cheer button{padding:9px 16px;border-radius:16px;font-size:15px;background:#aa7795;color:#fff}
+.g3 .g3-cheer button[data-cheer=""]{background:#eee4d4;color:#675c49;padding:9px 13px}
+.g3-status.g3-word{font-size:17px;font-weight:800;color:#c2475f;background:#fff3f6f2;border:1px solid #f3c1cf;padding:3px 12px;border-radius:14px;animation:g3pop .35s ease-out}
+@keyframes g3pop{from{transform:scale(.4);opacity:0}60%{transform:scale(1.15)}}
+.g3-med{position:absolute;left:50%;top:14px;transform:translateX(-50%);display:flex;align-items:center;gap:14px;background:#fbfff9f2;border:1px solid #cfe3d2;border-radius:22px;padding:10px 16px;box-shadow:0 8px 24px #4d7a5a2b;z-index:2;white-space:nowrap}
+.g3-med[hidden]{display:none}
+.g3-med .breath{width:34px;height:34px;margin:6px 8px}
+.g3-med b{font-size:14px;color:#4f7a5c}.g3-med p{margin:2px 0 0;font-size:13px;color:#5d6b5c}
+.g3 .g3-med button{background:#e3efe3;color:#4f6b55;padding:7px 14px;border-radius:14px;font-size:13px}
+@media(prefers-reduced-motion:reduce){.g3-status.g3-word{animation:none}}

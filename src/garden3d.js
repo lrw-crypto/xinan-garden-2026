@@ -16,14 +16,12 @@ const EMA={x:-9.2,z:-3.2};       // 繪馬架
 const FORTUNE={x:12.5,z:-10};    // 求籤屋
 const HUT={x:17,z:4.2};          // 補運光苗的根部；莖向西彎，花苞垂在補運台正上方
 const ALTAR={x:13.3,z:4.2};     // 補運台：在光苗花苞的正下方
-const BENCHES=[[-12.5,8.6],[-6.6,11.4],[8.4,11.4],[17.4,-4.6],[-17.2,1.4]]; // 五張長椅，都面向南方，每張三個座位
-const BENCH={x:BENCHES[0][0],z:BENCHES[0][1]};
-const SEAT_DX=[-1.1,0,1.1],CUSHIONS=[[-1.2,-8],[1.2,-8],[-1.2,-10.2],[1.2,-10.2]];
+const CUSHIONS=[[-1.2,-8],[1.2,-8],[-1.2,-10.2],[1.2,-10.2]];
 
 // 站位（世界座標）：人物走到這裡就會開啟互動
-const STAND=[[-11.2,-1.2],[12.5,-6.6],[0,-4.2],[13.3,6.3],[-12.5,10.2]];
-const NAMES=['心願祈福樹','暖心求籤','靜心亭子','補運光苗','休息長椅'];
-const TAG_AT=[[-11.5,5.2,-4.5],[12.5,5.6,-10],[0,7.4,-9],[15.6,9.6,4.2],[-12.5,2.6,8.6]];
+const STAND=[[-11.2,-1.2],[12.5,-6.6],[0,-4.2],[13.3,6.3]];
+const NAMES=['心願祈福樹','暖心求籤','靜心亭子','補運光苗'];
+const TAG_AT=[[-11.5,5.2,-4.5],[12.5,5.6,-10],[0,7.4,-9],[15.6,9.6,4.2]];
 export const spots=NAMES.map((name,i)=>({name,...toDb(STAND[i][0],STAND[i][1])}));
 export const places={
  spawn:toDb(0,10),
@@ -40,7 +38,6 @@ function groundY(X,Z){
  return 0;
 }
 const SOLIDS=[[TREE.x,TREE.z,1.3],[EMA.x,EMA.z,1.5],[FORTUNE.x,FORTUNE.z,3],[HUT.x,HUT.z,1.1],[0,-9,.9]];
-for(const [x,z] of BENCHES)SOLIDS.push([x-.85,z-.2,.8],[x+.85,z-.2,.8]);
 function blocked(X,Z){
  if(Math.abs(X)>BOUND.x||Z<BOUND.zMin||Z>BOUND.zMax)return true;
  for(const [x,z,r] of SOLIDS)if((X-x)**2+(Z-z)**2<r*r)return true;
@@ -94,14 +91,14 @@ function signTexture(text,fg,bg){const c=document.createElement('canvas');c.widt
 const C={grass:'#aadca6',grass2:'#9bd19a',base:'#8d5f80',stone:'#f6e8cf',stone2:'#f4cdd9',rock:'#b9add9',rock2:'#cdbfe6',trunk:'#8a5a48',wood:'#dc9a6b',woodDark:'#b9744d',column:'#cf6650',wall:'#fcf0de',roof:'#62b6ae',roofDark:'#4c9f98',trim:'#f6dfa9',gold:'#f2c14e',lantern:'#e8553f',water:'#8fd8e2',water2:'#b9ebef',pink:'#f8b9d4',pink2:'#fbd0e2',pink3:'#f29cc2',leaf:'#7fbf7a',leaf2:'#9bd18c',cushion:'#b79ad6',white:'#fffaf2'};
 
 export class Garden3D{
- players={};uid='';target=undefined;moved=()=>{};interact=()=>{};ok=false;
+ players={};uid='';target=undefined;moved=()=>{};interact=()=>{};cheer=()=>{};ok=false;
  constructor(host,opts){
  this.host=host;this.opts=opts;this.actors=new Map();this.keys=new Set();this.pointers=new Map();
  this.reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
  this.cam={yaw:.5,pitch:.8,dist:host.clientWidth<600?24:27,follow:true,mode:'pan',t:new THREE.Vector3(0,0,6)};
  this.jump={y:0,v:0};this.pendingSpot=-1;this.wishSlot=0;this.swayers=[];this.animated=[];
  host.classList.add('g3');
- host.innerHTML='<canvas class="g3-canvas" aria-label="草商輔導寺 3D 庭院"></canvas><div class="g3-labels"></div><div class="g3-hint"></div><button type="button" class="g3-prompt" hidden></button><div class="g3-swipe" hidden><p></p><div class="g3-pips" aria-hidden="true"></div><button type="button">接引聖光</button></div><div class="g3-hud"><button type="button" data-act="jump" aria-label="跳躍">跳躍</button><button type="button" data-act="home" aria-label="找自己">找自己</button><button type="button" data-act="mode" aria-label="切換拖曳方式">拖曳：平移</button><button type="button" data-act="spin" aria-label="旋轉視角">⟳</button><button type="button" data-act="in" aria-label="放大">＋</button><button type="button" data-act="out" aria-label="縮小">－</button></div>';
+ host.innerHTML='<canvas class="g3-canvas" aria-label="草商輔導寺 3D 庭院"></canvas><div class="g3-labels"></div><div class="g3-hint"></div><button type="button" class="g3-prompt" hidden></button><div class="g3-cheer" hidden><p></p><div><button type="button" data-cheer="💪 加油">加油</button><button type="button" data-cheer="💛 謝謝">謝謝</button><button type="button" data-cheer="🌷 陪伴">陪伴</button><button type="button" data-cheer="" aria-label="取消">×</button></div></div><div class="g3-swipe" hidden><p></p><div class="g3-pips" aria-hidden="true"></div><button type="button">接引聖光</button></div><div class="g3-hud"><button type="button" data-act="jump" aria-label="跳躍">跳躍</button><button type="button" data-act="home" aria-label="找自己">找自己</button><button type="button" data-act="mode" aria-label="切換拖曳方式">拖曳：平移</button><button type="button" data-act="spin" aria-label="旋轉視角">⟳</button><button type="button" data-act="in" aria-label="放大">＋</button><button type="button" data-act="out" aria-label="縮小">－</button></div>';
  this.canvas=host.querySelector('canvas');this.labels=host.querySelector('.g3-labels');this.prompt=host.querySelector('.g3-prompt');this.hint=host.querySelector('.g3-hint');
  this.hint.textContent=matchMedia('(pointer: coarse)').matches?'點地面走路・拖曳平移・雙指縮放與旋轉':'點地面或 WASD 走路・空白鍵跳躍・E 互動・滾輪縮放・右鍵拖曳旋轉';
  try{this.renderer=new THREE.WebGLRenderer({canvas:this.canvas,antialias:true,powerPreference:'low-power'})}
@@ -132,13 +129,13 @@ export class Garden3D{
  this.ground=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshBasicMaterial({visible:false}));this.ground.rotation.x=-Math.PI/2;s.add(this.ground);
  // 草地色塊
  for(let i=0;i<26;i++)put(s,cyl(1,1,.04,24),mat(i%2?C.grass2:'#b4dfa8'),(rand()-.5)*44,.01,(rand()-.5)*32,{s:[1.5+rand()*2.5,1,1+rand()*2],cast:false});
- this.buildPaths(rand);this.buildPond(rand);this.buildPavilion();this.buildWishTree(rand);this.buildEma();this.buildFortune();this.buildHut();this.buildBench();this.buildGate();this.buildWalls();this.buildNature(rand);this.buildPetals(rand);
+ this.buildPaths(rand);this.buildPond(rand);this.buildPavilion();this.buildWishTree(rand);this.buildEma();this.buildFortune();this.buildHut();this.buildGate();this.buildWalls();this.buildNature(rand);this.buildPetals(rand);
  }
  buildPaths(rand){
  const stones=[];const line=(a,b,gap=1.25)=>{const d=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.max(1,Math.round(d/gap));for(let i=0;i<=n;i++){const X=a[0]+(b[0]-a[0])*i/n,Z=a[1]+(b[1]-a[1])*i/n;if(!blocked(X,Z)||Math.abs(X-POND.x)<1.2)stones.push([X+(rand()-.5)*.35,Z+(rand()-.5)*.35])}};
  // 廣場與通往各處的石板路
  for(let a=0;a<3;a++)for(let i=0;i<10+a*7;i++){const t=i/(10+a*7)*Math.PI*2,r=1.1+a*1.15;stones.push([Math.cos(t)*r*1.25,8.6+Math.sin(t)*r*.8])}
- line([0,15],[0,10.6]);line([-1.4,7],[-3,-2.2]);line([-3,-2.2],[0,-4.4]);line([-3.4,-2],[-10.6,-1.2]);line([-2.6,8.8],[-11,10.2]);line([2.6,8.8],[4.5,8.6]);line([4.5,-2.3],[2,-4.4]);line([4.5,-2.3],[11.6,-6.2]);line([6,8.9],[13.6,5.4]);line([12.6,-5.6],[14.2,3.4]);
+ line([0,15],[0,10.6]);line([-1.4,7],[-3,-2.2]);line([-3,-2.2],[0,-4.4]);line([-3.4,-2],[-10.6,-1.2]);line([2.6,8.8],[4.5,8.6]);line([4.5,-2.3],[2,-4.4]);line([4.5,-2.3],[11.6,-6.2]);line([6,8.9],[13.6,5.4]);line([12.6,-5.6],[14.2,3.4]);
  const geo=cyl(.52,.56,.12,10),m1=new THREE.InstancedMesh(geo,mat(C.stone),stones.length),m2=new THREE.InstancedMesh(geo,mat(C.stone2),stones.length);
  const d=new THREE.Object3D();let a=0,b=0;
  for(const [X,Z] of stones){if(Math.abs(X-POND.x)<1.2&&Math.abs(Z-POND.z)<POND.bridge)continue;d.position.set(X,groundY(X,Z)+.05,Z);d.rotation.y=rand()*3;const k=.8+rand()*.5;d.scale.set(k,1,k*(.8+rand()*.3));d.updateMatrix();if(rand()<.72)m1.setMatrixAt(a++,d.matrix);else m2.setMatrixAt(b++,d.matrix)}
@@ -151,7 +148,18 @@ export class Garden3D{
  put(g,cyl(1,1,.1,32),mat(C.water2,{roughness:.25}),-1.5,.07,.4,{s:[2.2,1,1.3],cast:false});
  for(let i=0;i<26;i++){const t=i/26*Math.PI*2+rand()*.1;if(Math.abs(Math.cos(t)*POND.rx)<1.6)continue;put(g,ball(.42+rand()*.3,1),mat(i%3?C.rock:C.rock2),Math.cos(t)*(POND.rx+.2),.12,Math.sin(t)*(POND.rz+.2),{s:[1.1,.6,1]})}
  for(let i=0;i<7;i++){const X=(rand()-.5)*POND.rx*1.4,Z=(rand()-.5)*POND.rz*1.3;if(Math.abs(X)<1.6)continue;put(g,cyl(.42,.42,.04,14),mat(C.leaf),X,.11,Z,{cast:false});if(i%2)put(g,ball(.16,1),mat(C.pink3),X,.22,Z)}
- this.koi=[];for(let i=0;i<5;i++){const f=new THREE.Group();put(f,new THREE.CapsuleGeometry(.13,.42,3,8),mat(i%2?'#f58a3c':'#fff3e6'),0,0,0,{rz:Math.PI/2,cast:false});put(f,ball(.11,0),mat('#f0502d'),.12,.03,0,{s:[1,.5,1],cast:false});f.position.y=.13;g.add(f);this.koi.push({f,a:i*1.3,r:.45+.1*(i%3),side:i%2?1:-1,sp:.25+.07*i})}
+ // 錦鯉：紡錘形的身體、會擺動的尾鰭、背鰭、胸鰭與花斑
+ this.koi=[];const looks=[['#f58a3c','#fff3e6'],['#fff6ea','#f0502d'],['#f5b23c','#fff6ea'],['#fff6ea','#3b3a45'],['#f0502d','#fff3e6'],['#f7c9a0','#f58a3c']];
+ for(let i=0;i<6;i++){const [main,patch]=looks[i],f=new THREE.Group(),k=.85+(i%3)*.15,o={cast:false};
+ put(f,ball(.5,2),mat(main,{roughness:.45}),0,0,0,{s:[1,.34,.38],...o});           // 身體
+ put(f,ball(.26,2),mat(main,{roughness:.45}),.36,0,0,{s:[1,.5,.62],...o});          // 頭
+ put(f,ball(.2,1),mat(patch,{roughness:.45}),.08,.11,.02,{s:[1.1,.3,.7],...o});put(f,ball(.13,1),mat(patch,{roughness:.45}),-.2,.1,-.03,{s:[1,.3,.8],...o}); // 花斑
+ put(f,ball(.03,0),mat('#2b2530'),.5,.06,.1,o);put(f,ball(.03,0),mat('#2b2530'),.5,.06,-.1,o); // 眼睛
+ put(f,new THREE.ConeGeometry(.1,.3,4),mat(main),0,.14,0,{s:[1.6,.5,.15],...o});   // 背鰭
+ const finL=put(f,ball(.14,1),mat(patch),.16,-.02,.2,{s:[.9,.12,.55],ry:.6,...o}),finR=put(f,ball(.14,1),mat(patch),.16,-.02,-.2,{s:[.9,.12,.55],ry:-.6,...o});
+ const tail=new THREE.Group();tail.position.x=-.44;f.add(tail);
+ put(tail,ball(.2,1),mat(main),-.1,0,0,{s:[.9,.3,.32],...o});put(tail,new THREE.ConeGeometry(.24,.42,4),mat(patch),-.36,0,0,{rz:-Math.PI/2,s:[1,1,.18],...o});
+ f.scale.setScalar(k);f.position.y=.14;g.add(f);this.koi.push({f,tail,finL,finR,a:i*1.1,r:.42+.08*(i%4),side:i%2?1:-1,sp:.22+.05*i})}
  // 拱橋：木板沿著弧線鋪
  const n=14;for(let i=0;i<n;i++){const z0=-POND.bridge+(i+.5)*2*POND.bridge/n,Z=POND.z+z0,y=bridgeY(Z),slope=Math.atan2(bridgeY(Z+.1)-bridgeY(Z-.1),.2);put(g,box(2.3,.16,2*POND.bridge/n+.06),mat(i%2?C.wood:'#e6a878'),0,y-.02,z0,{rx:-slope})}
  for(const sx of [-1,1]){const pts=[];for(let i=0;i<=n;i++){const z0=-POND.bridge+i*2*POND.bridge/n;pts.push(new THREE.Vector3(sx*1.12,bridgeY(POND.z+z0)+.75,z0));if(i%2===0)put(g,cyl(.09,.09,.85,8),mat(C.column),sx*1.12,bridgeY(POND.z+z0)+.36,z0)}
@@ -257,13 +265,6 @@ export class Garden3D{
  put(this.scene,cyl(1.25,1.35,.14,28),mat('#fff1c9'),ALTAR.x,.07,ALTAR.z,{cast:false});put(this.scene,cyl(.95,.95,.16,28),mat('#ffe08a',{emissive:'#ffd466',emissiveIntensity:.45}),ALTAR.x,.08,ALTAR.z,{cast:false});
  for(let i=0;i<8;i++){const a=i/8*Math.PI*2;put(this.scene,new THREE.OctahedronGeometry(.09),mat(C.gold,{emissive:'#ffd66b',emissiveIntensity:.7}),ALTAR.x+Math.cos(a)*1.12,.2,ALTAR.z+Math.sin(a)*1.12,{cast:false})}
  }
- buildBench(){
- BENCHES.forEach(([x,z],n)=>{const g=new THREE.Group();g.position.set(x,0,z);this.scene.add(g);
- put(g,box(3.5,.16,.9),mat(C.wood),0,.6,0);put(g,box(3.5,.8,.14),mat(C.wood),0,1.15,-.42,{rx:-.12});
- for(const sx of [-1,1]){put(g,box(.16,.6,.8),mat(C.woodDark),sx*1.6,.3,0);put(g,box(.16,.5,.16),mat(C.woodDark),sx*1.67,.95,.3)}
- put(g,box(.5,.9,.05),mat([C.pink2,'#fff3d6','#d8c4ee'][n%3]),-1.45,1.17,-.33,{rx:-.12});
- if(n===0){put(g,cyl(.36,.36,.5,10),mat('#efe3d2'),2.4,.25,-.2);put(g,cyl(.14,.12,.2,10),mat(C.white),2.4,.6,-.2)}});
- }
  buildGate(){
  const g=new THREE.Group();g.position.set(0,0,16.6);this.scene.add(g);this.gate=g;
  for(const sx of [-1,1]){put(g,cyl(.3,.32,4,12),mat(C.column),sx*2.6,2,0);put(g,box(.9,.4,.9),mat('#efe3d2'),sx*2.6,.2,0);this.lantern(g,sx*1.8,3,.1)}
@@ -318,7 +319,7 @@ export class Garden3D{
  if(!p.drag&&Math.hypot(e.clientX-p.sx,e.clientY-p.sy)<8)return;p.drag=true;if(this.swipe)return;
  if(p.rot||this.cam.mode==='rotate'){this.cam.yaw-=dx*.007;this.cam.pitch=clamp(this.cam.pitch+dy*.004,.35,1.15)}
  else{const k=2*this.cam.dist*Math.tan(this.camera.fov*Math.PI/360)/this.h,sy=Math.sin(this.cam.yaw),cy=Math.cos(this.cam.yaw);this.cam.follow=false;this.cam.t.x+=(-cy*dx-sy*dy/Math.sin(this.cam.pitch))*k;this.cam.t.z+=(sy*dx-cy*dy/Math.sin(this.cam.pitch))*k;this.cam.t.x=clamp(this.cam.t.x,-24,24);this.cam.t.z=clamp(this.cam.t.z,-18,18)}});
- const up=e=>{const p=this.pointers.get(e.pointerId);this.pointers.delete(e.pointerId);this.pinch=undefined;if(p&&this.swipe&&p.drag&&Math.hypot(e.clientX-p.sx,e.clientY-p.sy)>45){this.addSwipe();return}if(!p||p.drag||e.type==='pointercancel'||performance.now()-p.t>600||p.rot)return;const pt=groundAt(e);if(pt)this.walkTo(pt.x,pt.z)};
+ const up=e=>{const p=this.pointers.get(e.pointerId);this.pointers.delete(e.pointerId);this.pinch=undefined;if(p&&this.swipe&&p.drag&&Math.hypot(e.clientX-p.sx,e.clientY-p.sy)>45){this.addSwipe();return}if(!p||p.drag||e.type==='pointercancel'||performance.now()-p.t>600||p.rot)return;const who=this.pickActor(e);if(who){this.openCheer(who);return}this.closeCheer();const pt=groundAt(e);if(pt)this.walkTo(pt.x,pt.z)};
  c.addEventListener('pointerup',up);c.addEventListener('pointercancel',up);
  c.addEventListener('wheel',e=>{e.preventDefault();this.cam.dist=clamp(this.cam.dist*(e.deltaY>0?1.1:.9),9,46)},{passive:false});
  const typing=()=>document.querySelector('dialog[open]')||/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||'');
@@ -329,12 +330,14 @@ export class Garden3D{
  this.host.querySelector('.g3-hud').addEventListener('click',e=>{const act=e.target.closest('button')?.dataset.act;if(!act)return;
  if(act==='jump')this.doJump();if(act==='home'){this.cam.follow=true}if(act==='in')this.cam.dist=clamp(this.cam.dist*.82,9,46);if(act==='out')this.cam.dist=clamp(this.cam.dist*1.2,9,46);if(act==='spin')this.spinTo=(this.spinTo??this.cam.yaw)+Math.PI/4;
  if(act==='mode'){this.cam.mode=this.cam.mode==='pan'?'rotate':'pan';e.target.closest('button').textContent=this.cam.mode==='pan'?'拖曳：平移':'拖曳：旋轉'}});
+ this.cheerBox=this.host.querySelector('.g3-cheer');
+ this.cheerBox.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const id=this.cheerTo;this.closeCheer();if(b.dataset.cheer&&id&&this.players[id])this.cheer(id,b.dataset.cheer)});
  this.prompt.addEventListener('click',()=>{if(this.near>=0)this.interact(this.near)});
  this.labels.addEventListener('click',e=>{const i=e.target.closest('[data-spot]')?.dataset.spot;if(i!==undefined)this.goSpot(Number(i))});
  }
  walkTo(X,Z){const me=this.players[this.uid];if(!me)return;const from=this.pos?[this.pos.x,this.pos.z]:toWorld(me.x,me.y);this.path=route(from,[clamp(X,-BOUND.x,BOUND.x),clamp(Z,BOUND.zMin,BOUND.zMax)]);const [x,z]=this.path.shift();this.target={x,z};this.pendingSpot=-1;this.cam.follow=true;this.stuck=0}
  /** 走到某個互動點，抵達後自動開啟。 */
- goSpot(i){const me=this.players[this.uid];if(!me){this.interact(i);return}const [X,Z]=toWorld(me.x,me.y);let to=STAND[i];if(i===4)for(const b of BENCHES)if(Math.hypot(b[0]-X,b[1]+1.6-Z)<Math.hypot(to[0]-X,to[1]-Z))to=[b[0],b[1]+1.6];
+ goSpot(i){const me=this.players[this.uid];if(!me){this.interact(i);return}const [X,Z]=toWorld(me.x,me.y);const to=STAND[i];
  if(Math.hypot(X-to[0],Z-to[1])<2.4){this.interact(i);return}this.walkTo(to[0],to[1]);this.pendingSpot=i;this.spotGoal=to}
  /** 請玩家在畫面上滑動 needed 下（也可以按按鈕），完成後呼叫 done。滑動期間不會平移或旋轉鏡頭。 */
  beginSwipe(needed,done){
@@ -347,12 +350,21 @@ export class Garden3D{
  // 每滑一下，光苗晃一晃、花苞亮一下
  if(this.ok){const start=performance.now();this.animated.push(()=>{const k=Math.min(1,(performance.now()-start)/700);this.sprout.rotation.z=this.reduceMotion?0:Math.sin(k*18)*(1-k)*.05;this.budMat.emissiveIntensity=.7+(1-k)*1.6;return k<1})}
  if(sw.count>=sw.needed){this.cancelSwipe();sw.done()}}
- /** 找一個空位：kind 為 'bench'（五張長椅各三個座位，由近到遠找）或 'cushion'（靜心亭四個蒲團）。坐滿時回傳 null。 */
- findSeat(kind){
- const me=this.players[this.uid],[mx,mz]=me?toWorld(me.x,me.y):[0,0],state=kind==='bench'?'resting':'meditating';
- const seats=kind==='bench'?[...BENCHES].sort((a,b)=>Math.hypot(a[0]-mx,a[1]-mz)-Math.hypot(b[0]-mx,b[1]-mz)).flatMap(([x,z])=>[1,0,2].map(k=>toDb(x+SEAT_DX[k],z+.45))):CUSHIONS.map(([X,Z])=>toDb(PAV.x+X,Z));
- const taken=p=>Object.entries(this.players).some(([id,o])=>id!==this.uid&&o.state===state&&Math.abs(o.x-p.x)<=8&&Math.abs(o.y-p.y)<=6);
+ /** 找一個空的蒲團（靜心亭共四個）。坐滿時回傳 null。 */
+ findSeat(){
+ const seats=CUSHIONS.map(([X,Z])=>toDb(PAV.x+X,Z));
+ const taken=p=>Object.entries(this.players).some(([id,o])=>id!==this.uid&&o.state==='meditating'&&Math.abs(o.x-p.x)<=8&&Math.abs(o.y-p.y)<=6);
  return seats.find(p=>!taken(p))||null}
+ /** 點到的是哪一位同學（不含自己）；沒有點到人則回傳 undefined。 */
+ pickActor(e){
+ const b=this.canvas.getBoundingClientRect(),px=e.clientX-b.left,py=e.clientY-b.top,v=new THREE.Vector3();let best,bd=1e9;
+ for(const [id,a] of this.actors){if(id===this.uid||!this.players[id])continue;
+ v.copy(a.root.position);v.y+=a.h;v.project(this.camera);const topY=(1-v.y)/2*this.h;
+ v.copy(a.root.position);v.project(this.camera);if(v.z>1)continue;const x=(v.x+1)/2*this.w,footY=(1-v.y)/2*this.h,half=Math.max(18,(footY-topY)*.42);
+ if(Math.abs(px-x)<half&&py>topY-10&&py<footY+8){const d=Math.abs(px-x);if(d<bd){bd=d;best=id}}}
+ return best}
+ openCheer(id){this.cheerTo=id;this.cheerBox.firstChild.textContent='給「'+this.players[id].name+'」一句打氣';this.cheerBox.hidden=false}
+ closeCheer(){this.cheerTo=undefined;if(this.cheerBox)this.cheerBox.hidden=true}
  /** 停止自動行走（例如被安排坐下或排隊時）。 */
  stop(){this.target=undefined;this.path=undefined;this.pendingSpot=-1}
  doJump(){if(this.jump.y===0&&this.players[this.uid])this.jump.v=6.2}
@@ -399,6 +411,8 @@ export class Garden3D{
  // 跳躍只是自己畫面上的動作，不會同步給別人
  if(this.jump.v||this.jump.y){this.jump.y+=this.jump.v*dt;this.jump.v-=18*dt;if(this.jump.y<=0){this.jump.y=0;this.jump.v=0}}
  }
+ // 打氣的話：送給誰就顯示在誰的頭上（對方不在線時顯示在自己頭上）
+ const cheers={};for(const [id,p] of Object.entries(this.players))if(p.emoji){const to=p.emojiTo&&this.players[p.emojiTo]?p.emojiTo:id;cheers[to]=p.emoji.split(' ').pop()}
  // 所有人物
  const camRight={x:Math.cos(cam.yaw),z:-Math.sin(cam.yaw)};
  for(const [id,p] of Object.entries(this.players)){
@@ -430,8 +444,8 @@ export class Garden3D{
  if(bless){const pulse=this.reduceMotion?1:.85+Math.sin(t*3)*.15,u=a.beam.userData;u.outer.material.opacity=.1*pulse;u.inner.material.opacity=.13*pulse;u.halo.material.opacity=.32*pulse;u.outer.rotation.y=t*.4;u.halo.scale.setScalar(1+Math.sin(t*2)*.06)}
  // 星星沿螺旋緩緩上升並閃爍
  a.stars.forEach((st,i)=>{st.visible=bless;if(!bless)return;const rise=((t*.35+i/8)%1),ang=t*1.6+i*.785,rad=1.15-rise*.35,tw=this.reduceMotion?1:.55+Math.abs(Math.sin(t*5+i*1.7))*.75;st.position.set(Math.cos(ang)*rad,.3+rise*3.4,Math.sin(ang)*rad);st.rotation.y=t*3+i;st.scale.setScalar(tw*(1-rise*.4))});
- const status=p.emoji||({meditating:'🌿 靜心中',praying:'✨ 祈福中',queue:'🌟 等候中',blessing:'💫 補運中',resting:'🍵 休息中'}[p.state]||'');
- if(a.name!==p.name){a.name=p.name;a.tag.lastChild.textContent=p.name}if(a.status!==status){a.status=status;a.tag.firstChild.textContent=status;a.tag.firstChild.hidden=!status}
+ const word=cheers[id],status=word||({meditating:'🌿 靜心中',praying:'✨ 祈福中',queue:'🌟 等候中',blessing:'💫 補運中',resting:'🍵 休息中'}[p.state]||'');
+ if(a.name!==p.name){a.name=p.name;a.tag.lastChild.textContent=p.name}if(a.status!==status){a.status=status;a.tag.firstChild.textContent=status;a.tag.firstChild.hidden=!status}a.tag.firstChild.classList.toggle('g3-word',Boolean(word));
  a.h=h;
  }
  for(const [id,a] of this.actors)if(!this.players[id]){this.scene.remove(a.root);a.tag.remove();this.actors.delete(id)}
@@ -448,7 +462,7 @@ export class Garden3D{
  // 場景動態
  for(const sw of this.swayers)sw.o.rotation.z=this.reduceMotion?0:Math.sin(t*sw.sp+sw.ph)*sw.amp;
  this.animated=this.animated.filter(fn=>fn(t)!==false);
- for(const f of this.koi){f.a+=dt*f.sp*f.side;const rx=1.5*f.r*2,rz=2*f.r*2;f.f.position.x=f.side*3+Math.cos(f.a)*rx;f.f.position.z=Math.sin(f.a)*rz;f.f.rotation.y=Math.atan2(-Math.cos(f.a)*rz*f.side,-Math.sin(f.a)*rx*f.side)}
+ for(const f of this.koi){f.a+=dt*f.sp*f.side;const rx=1.5*f.r*2,rz=2*f.r*2;f.f.position.x=f.side*3+Math.cos(f.a)*rx;f.f.position.z=Math.sin(f.a)*rz;f.f.rotation.y=Math.atan2(-Math.cos(f.a)*rz*f.side,-Math.sin(f.a)*rx*f.side)+Math.sin(t*5+f.a)*.08;f.tail.rotation.y=Math.sin(t*6+f.a*3)*.55;f.finL.rotation.y=.6+Math.sin(t*4+f.a)*.25;f.finR.rotation.y=-.6-Math.sin(t*4+f.a)*.25;f.f.position.y=.14+Math.sin(t*1.3+f.a)*.015}
  if(this.petals.count){const d=this.dummy;this.petalData.forEach((p,i)=>{p.y-=p.v*dt;p.x+=Math.sin(t*p.sp+p.ph)*dt*.7+dt*.35;if(p.y<0){p.y=9+Math.random()*3;p.x=cam.t.x+(Math.random()-.5)*44;p.z=cam.t.z+(Math.random()-.5)*34}d.position.set(p.x,p.y,p.z);d.rotation.set(t*p.sp+p.ph,p.ph,t*p.sp*.7);d.updateMatrix();this.petals.setMatrixAt(i,d.matrix)});this.petals.instanceMatrix.needsUpdate=true}
  this.renderer.render(this.scene,this.camera);
  this.updateLabels(mine);
@@ -456,9 +470,9 @@ export class Garden3D{
  updateLabels(mine){
  const v=new THREE.Vector3(),place=(el,x,y,z)=>{v.set(x,y,z).project(this.camera);const show=v.z<1&&Math.abs(v.x)<1.15&&Math.abs(v.y)<1.2;el.style.display=show?'':'none';if(show)el.style.transform='translate(-50%,-100%) translate('+((v.x+1)/2*this.w).toFixed(1)+'px,'+((1-v.y)/2*this.h).toFixed(1)+'px)'};
  for(const a of this.actors.values())place(a.tag,a.root.position.x,a.root.position.y+a.h+.25,a.root.position.z);
- if(!this.spotTags){this.spotTags=NAMES.map((n,i)=>{const b=document.createElement('button');b.type='button';b.className='g3-spot';b.dataset.spot=String(i);b.textContent=['🌸','🎋','🌿','✨','🍵'][i]+' '+n;this.labels.append(b);return b})}
+ if(!this.spotTags){this.spotTags=NAMES.map((n,i)=>{const b=document.createElement('button');b.type='button';b.className='g3-spot';b.dataset.spot=String(i);b.textContent=['🌸','🎋','🌿','✨'][i]+' '+n;this.labels.append(b);return b})}
  this.spotTags.forEach((b,i)=>place(b,TAG_AT[i][0],TAG_AT[i][1],TAG_AT[i][2]));
- let near=-1;const busy=this.players[this.uid]?.state;if(mine&&busy!=='blessing'&&busy!=='queue'){let best=2.6;const check=(X,Z,i)=>{const d=Math.hypot(mine.X-X,mine.Z-Z);if(d<best){best=d;near=i}};STAND.forEach(([X,Z],i)=>check(X,Z,i));if(busy!=='resting')for(const [x,z] of BENCHES)check(x,z+1.2,4)}
+ let near=-1;const busy=this.players[this.uid]?.state;if(mine&&busy!=='blessing'&&busy!=='queue'){let best=2.6;const check=(X,Z,i)=>{const d=Math.hypot(mine.X-X,mine.Z-Z);if(d<best){best=d;near=i}};STAND.forEach(([X,Z],i)=>check(X,Z,i))}
  if(near!==this.near){this.near=near;this.prompt.hidden=near<0;if(near>=0)this.prompt.textContent='進入 '+NAMES[near]+(matchMedia('(pointer: coarse)').matches?'':'（E）')}
  }
 }
