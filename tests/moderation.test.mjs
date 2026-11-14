@@ -1,0 +1,9 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {checkWish} from '../src/moderation.js';
+const ok=['每天進步一點點','希望統測順利，全班一起加油','我不會放棄，繼續努力','希望家人身體健康','希望我能更有耐心','考上理想的學校','希望自己幹勁十足','笑容像陽光一樣燦爛','希望少滑手機多看書','我愛我的家人'];
+const bad=['幹你','幹 你 娘','f.u.c.k','他是白痴','去死','討厭數學老師','我想放棄了','希望他落榜','我喜歡你','想跟小美在一起','告白成功','520','愛你喔 ❤','0912345678','我的 LINE 是 abc','ig: happy_day','test@mail.com','http://example.com','三年二班 15 號','住在中正路 100 號','我叫王小明','生日 5 月 20 日','<b>嗨</b>'];
+test('ordinary encouraging wishes pass',()=>{for(const t of ok)assert.equal(checkWish(t).ok,true,t)});
+test('rude, hostile, romantic and personal-data wishes are refused',()=>{for(const t of bad)assert.equal(checkWish(t).ok,false,t)});
+test('distress is refused with a caring message',()=>{const r=checkWish('我不想活了');assert.equal(r.ok,false);assert.equal(r.care,true);assert.match(r.reason,/1925/)});
+test('empty and over-long text is refused',()=>{assert.equal(checkWish('  ').ok,false);assert.equal(checkWish('好'.repeat(121)).ok,false)});
