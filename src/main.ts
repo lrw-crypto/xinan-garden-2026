@@ -40,7 +40,7 @@ function fortune(){show('<h2>🎋 暖心求籤</h2><div class="tube-wrap"><div i
 function meditate(){show('<h2>🌿 靜心修行</h2><p>吸氣四秒、吐氣四秒。任何時候都可以停止。</p><div class="breath"></div><div class="actions">'+[30,60,180].map(n=>'<button data-time="'+n+'">'+(n<60?n+' 秒':n/60+' 分鐘')+'</button>').join('')+'</div><p id="clock">選擇一段留給自己的時間。</p>');modal.querySelectorAll('[data-time]').forEach(b=>b.addEventListener('click',()=>{if(breathTimer)clearInterval(breathTimer);let remaining=Number((b as HTMLElement).dataset.time);const c=places.cushions[seat(4)];place(c.x,c.y);state('meditating');$('#clock').textContent='剩餘 '+remaining+' 秒';breathTimer=setInterval(()=>{remaining--;$('#clock').textContent=remaining?'剩餘 '+remaining+' 秒':'謝謝你，給自己這段安靜的時間。';if(!remaining){clearInterval(breathTimer);breathTimer=undefined;state('walking')}},1000)}))}
 function blessing(){show('<h2>✨ 排隊補運</h2><p>掃走一點煩惱，裝滿一點勇氣。</p><p id="queue-info"></p><div id="queue-line" class="queue-line" aria-label="排隊中的同學"></div><div id="bless-card"></div><div class="actions"><button id="join">排隊補運</button><button id="leave">離開隊伍</button></div><p class="muted">以伺服器時間排序。純前端版本無法保證抵抗惡意插隊；每位同學只能更動自己的紀錄。</p>');$('#join').onclick=()=>safe(async()=>{await onDisconnect(ref(database,'queue/'+uid)).remove();const q=places.queue(1);place(q.x,q.y);state('queue');await runTransaction(ref(database,'queue/'+uid),current=>current||{joinedAt:serverTimestamp()})});$('#leave').onclick=()=>safe(async()=>{await remove(ref(database,'queue/'+uid));state('walking')});processQueue()}
 const blessings=['你不必完美，也能勇敢向前。今天試著肯定自己一次。','煩惱掃一掃，心裡就多出放勇氣的位置。慢慢來，你可以的。','星光記得你每一次的努力。累的時候，記得這裡有人陪你。','勇氣不是不害怕，而是帶著害怕也願意再試一次。','今天的你已經很努力了。回去好好吃飯、好好睡覺。','願你讀書時專心，休息時安心，面對考卷時有一顆平靜的心。'];
-const stageText=()=>{const t=Date.now()-blessStart;return '輪到你了！'+(t<2700?'🧹 正在掃走煩惱……':t<5400?'💪 正在補充勇氣……':'✨ 星光環繞中……')};
+const stageText=()=>{const t=Date.now()-blessStart;return '輪到你了！'+(t<2700?'🧹 聖光灑下，正在掃走煩惱……':t<5400?'💪 正在補充勇氣……':'✨ 星光環繞中……')};
 const seat=(n:number)=>{let h=0;for(const ch of uid)h=(h*31+ch.charCodeAt(0))>>>0;return h%n};
 function place(x:number,y:number){scene.stop();me.x=x;me.y=y;safe(()=>update(ref(database,'players/'+uid),{x,y}))}
 function processQueue(){
@@ -53,10 +53,11 @@ if(line){line.replaceChildren();ordered.slice(0,8).forEach(([id],n)=>{const el=d
 if(pos>0&&pos!==lastQueuePos&&me){const q=places.queue(pos);place(q.x,q.y)}
 lastQueuePos=pos;
 if(pos===0&&!queueTimer){
+// 輪到自己：關掉排隊視窗，讓人物站上補運台，看得到聖光與星星
 place(places.hutDoor.x,places.hutDoor.y);state('blessing');blessStart=Date.now();
-stageTimer=setInterval(()=>{if($('#queue-info'))$('#queue-info').textContent=stageText()},400);
-if($('#queue-info'))$('#queue-info').textContent=stageText();
-queueTimer=setTimeout(()=>{queueTimer=undefined;clearInterval(stageTimer);safe(async()=>{await remove(ref(database,'queue/'+uid));state('walking');const card=blessings[crypto.getRandomValues(new Uint32Array(1))[0]%blessings.length];tell('✨ 祝福卡：'+card);const box=$('#bless-card');if(box){const el=document.createElement('div');el.className='card bless';el.textContent='💫 煩惱輕一點，勇氣多一點。'+card;box.replaceChildren(el)}})},8000)}
+if(modal.open&&$('#queue-info'))modal.close();
+tell(stageText());stageTimer=setInterval(()=>tell(stageText()),400);
+queueTimer=setTimeout(()=>{queueTimer=undefined;clearInterval(stageTimer);safe(async()=>{await remove(ref(database,'queue/'+uid));state('walking');const card=blessings[crypto.getRandomValues(new Uint32Array(1))[0]%blessings.length];tell('✨ 祝福卡：'+card);if(!modal.open)show('<h2>✨ 補運完成</h2><div class="card bless">💫 煩惱輕一點，勇氣多一點。'+card+'</div><p class="muted">帶著這份祝福，慢慢走回自己的路上。</p>')})},8000)}
 if(pos!==0&&queueTimer){clearTimeout(queueTimer);clearInterval(stageTimer);queueTimer=undefined}}
 function bench(){const b=places.bench[seat(2)];place(b.x,b.y);state('resting');show('<h2>🍵 溫暖休息長椅</h2><div class="card">你不是成績單上的一個數字。<br>你的善良、好奇與努力，都有自己的光。</div><p>向院子裡的同學送出一點溫暖：</p><div class="actions"><button data-emoji="💪 加油">💪 加油</button><button data-emoji="💛 謝謝">💛 謝謝</button><button data-emoji="🌷 陪伴">🌷 陪伴</button></div>');modal.querySelectorAll('[data-emoji]').forEach(b=>b.addEventListener('click',()=>safe(async()=>{await update(ref(database,'players/'+uid),{emoji:(b as HTMLElement).dataset.emoji});setTimeout(()=>safe(()=>update(ref(database,'players/'+uid),{emoji:null})),5000)})))}
 window.addEventListener('pagehide',()=>{if(uid){void remove(ref(database,'players/'+uid));void remove(ref(database,'queue/'+uid))}});

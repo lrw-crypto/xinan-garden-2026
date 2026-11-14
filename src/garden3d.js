@@ -15,10 +15,11 @@ const TREE={x:-14,z:-6};         // 祈福樹
 const EMA={x:-9.2,z:-3.2};       // 繪馬架
 const FORTUNE={x:12.5,z:-10};    // 求籤屋
 const HUT={x:17.6,z:4.2};        // 補運小屋（門朝西）
+const ALTAR={x:13.3,z:4.2};     // 補運台：在小屋門外的空地上，人物整個站在戶外，不會被屋子遮住
 const BENCH={x:-12.5,z:8.6};     // 長椅
 
 // 站位（世界座標）：人物走到這裡就會開啟互動
-const STAND=[[-11.2,-1.2],[12.5,-6.6],[0,-4.2],[14.4,4.2],[-12.5,10.2]];
+const STAND=[[-11.2,-1.2],[12.5,-6.6],[0,-4.2],[13.3,6.3],[-12.5,10.2]];
 const NAMES=['心願祈福樹','暖心求籤','靜心亭子','補運小屋','休息長椅'];
 const TAG_AT=[[-11.5,5.2,-4.5],[12.5,5.6,-10],[0,7.4,-9],[17.6,5,4.2],[-12.5,2.6,8.6]];
 export const spots=NAMES.map((name,i)=>({name,...toDb(STAND[i][0],STAND[i][1])}));
@@ -26,8 +27,8 @@ export const places={
  spawn:toDb(0,10),
  cushions:[[-1.2,-8],[1.2,-8],[-1.2,-10.2],[1.2,-10.2]].map(([X,Z])=>toDb(PAV.x+X,Z)),
  bench:[toDb(BENCH.x-.3,BENCH.z+.5),toDb(BENCH.x+.8,BENCH.z+.5)],
- hutDoor:toDb(15.5,4.2),
- queue:i=>toDb(14.4,5.6+Math.min(i,6)*1.25)
+ hutDoor:toDb(ALTAR.x,ALTAR.z),
+ queue:i=>toDb(ALTAR.x,ALTAR.z+1.5+Math.min(i,6)*1.25)
 };
 
 // ── 地形高度與碰撞 ──
@@ -241,7 +242,10 @@ export class Garden3D{
  for(const sx of [-1,1])put(g,box(.16,2.3,.3),mat(C.woodDark),sx*.85,1.45,d+.05);
  for(let i=0;i<5;i++){const st=put(g,new THREE.OctahedronGeometry(.16),mat(C.gold,{emissive:'#ffd66b',emissiveIntensity:.8}),-1.4+i*.7,3.2+(i%2)*.35,d+.5);this.animated.push(t=>{st.rotation.y=t*1.5+i;st.position.y=3.2+(i%2)*.35+Math.sin(t*2+i)*.08})}
  // 排隊的小地墊
- for(let i=0;i<5;i++)put(this.scene,cyl(.42,.42,.04,14),mat(i?'#fbe2ea':'#ffe9a8'),14.4,.03,5.6+(i-1)*1.25+(i?0:-.15),{cast:false});
+ for(let i=1;i<=5;i++)put(this.scene,cyl(.42,.42,.04,14),mat('#fbe2ea'),ALTAR.x,.03,ALTAR.z+1.5+i*1.25,{cast:false});
+ // 補運台：金色圓台，外圈一圈小星
+ put(this.scene,cyl(1.25,1.35,.14,28),mat('#fff1c9'),ALTAR.x,.07,ALTAR.z,{cast:false});put(this.scene,cyl(.95,.95,.16,28),mat('#ffe08a',{emissive:'#ffd466',emissiveIntensity:.45}),ALTAR.x,.08,ALTAR.z,{cast:false});
+ for(let i=0;i<8;i++){const a=i/8*Math.PI*2;put(this.scene,new THREE.OctahedronGeometry(.09),mat(C.gold,{emissive:'#ffd66b',emissiveIntensity:.7}),ALTAR.x+Math.cos(a)*1.12,.2,ALTAR.z+Math.sin(a)*1.12,{cast:false})}
  }
  buildBench(){
  const g=new THREE.Group();g.position.set(BENCH.x,0,BENCH.z);this.scene.add(g);
@@ -339,10 +343,15 @@ export class Garden3D{
  body.position.z=.004;rig.add(legL,legR,body);fig.add(rig,emblem);bill.add(fig);root.add(bill);
  const shadow=put(root,new THREE.CircleGeometry(.5,20),new THREE.MeshBasicMaterial({color:'#3e352d',transparent:true,opacity:.2,depthWrite:false}),0,.03,0,{rx:-Math.PI/2,cast:false});
  const ring=put(root,new THREE.RingGeometry(.52,.62,28),new THREE.MeshBasicMaterial({color:'#fff',transparent:true,opacity:.95,depthWrite:false}),0,.04,0,{rx:-Math.PI/2,cast:false});
- const stars=[0,1,2].map(()=>put(root,new THREE.OctahedronGeometry(.16),mat(C.gold,{emissive:'#ffd66b',emissiveIntensity:1}),0,1,0,{cast:false}));
+ const stars=[0,1,2,3,4,5,6,7].map(()=>put(root,new THREE.OctahedronGeometry(.13),mat(C.gold,{emissive:'#ffd66b',emissiveIntensity:1}),0,1,0,{cast:false}));
+ // 聖光：從上方灑下的光柱與腳下的光暈，補運時才顯示
+ const glow=(o,add)=>new THREE.MeshBasicMaterial({color:add?'#fff3b8':'#ffe27a',transparent:true,opacity:o,blending:add?THREE.AdditiveBlending:THREE.NormalBlending,depthWrite:false,side:THREE.DoubleSide,fog:false});
+ const beam=new THREE.Group();beam.visible=false;root.add(beam);
+ const outer=new THREE.Mesh(new THREE.CylinderGeometry(.55,1.35,9,28,1,true),glow(.1)),inner=new THREE.Mesh(new THREE.CylinderGeometry(.22,.8,9,24,1,true),glow(.12)),halo=new THREE.Mesh(new THREE.CircleGeometry(1.5,32),glow(.3,true));
+ outer.position.y=inner.position.y=4.5;halo.rotation.x=-Math.PI/2;halo.position.y=.2;beam.add(outer,inner,halo);beam.userData={outer,inner,halo};
  const tag=document.createElement('div');tag.className='g3-tag';tag.innerHTML='<span class="g3-status" hidden></span><span class="g3-name"></span>';this.labels.append(tag);
  this.scene.add(root);
- a={root,bill,fig,rig,body,legL,legR,phase:0,walk:0,side:1,key:'',emblem,shadow,ring,stars,tag,X:NaN,Z:0,y:0,flip:1,movingUntil:0,seed:this.actors.size*1.7,name:'',status:''};this.actors.set(id,a);return a}
+ a={root,bill,fig,rig,beam,body,legL,legR,phase:0,walk:0,side:1,key:'',emblem,shadow,ring,stars,tag,X:NaN,Z:0,y:0,flip:1,movingUntil:0,seed:this.actors.size*1.7,name:'',status:''};this.actors.set(id,a);return a}
 
  frame(t,dt){
  const cam=this.cam,me=this.players[this.uid];
@@ -387,8 +396,11 @@ export class Garden3D{
  a.legL.rotation.z=sw*swing;a.legR.rotation.z=-sw*swing;a.legL.scale.y=1-Math.max(0,sw)*raise;a.legR.scale.y=1-Math.max(0,-sw)*raise;
  a.fig.position.y=Math.abs(Math.cos(a.phase))*.035*k;a.fig.rotation.z=sw*.03*k*(1-a.side*.6);a.fig.scale.y=k>.05||this.reduceMotion?1:1+Math.sin(t*1.5+a.seed)*.012;
  const air=local?this.jump.y:0;a.shadow.position.y=.03-air;a.ring.position.y=.04-air;a.shadow.scale.setScalar(seated?1.25:1);a.ring.scale.setScalar(seated?1.25:1);a.ring.material.color.set(p.color);
- const bless=p.state==='blessing';a.stars.forEach((st,i)=>{st.visible=bless;const ang=t*2.6+i*2.094;st.position.set(Math.cos(ang)*.95,h*.55+Math.sin(ang*1.3)*.5,Math.sin(ang)*.95);st.rotation.y=t*3});
- const status=p.emoji||({meditating:'🌿 靜心中',praying:'✨ 祈福中',queue:'🌟 等候中',blessing:'🧹💫 補運中',resting:'🍵 休息中'}[p.state]||'');
+ const bless=p.state==='blessing';a.beam.visible=bless;
+ if(bless){const pulse=this.reduceMotion?1:.85+Math.sin(t*3)*.15,u=a.beam.userData;u.outer.material.opacity=.1*pulse;u.inner.material.opacity=.13*pulse;u.halo.material.opacity=.32*pulse;u.outer.rotation.y=t*.4;u.halo.scale.setScalar(1+Math.sin(t*2)*.06)}
+ // 星星沿螺旋緩緩上升並閃爍
+ a.stars.forEach((st,i)=>{st.visible=bless;if(!bless)return;const rise=((t*.35+i/8)%1),ang=t*1.6+i*.785,rad=1.15-rise*.35,tw=this.reduceMotion?1:.55+Math.abs(Math.sin(t*5+i*1.7))*.75;st.position.set(Math.cos(ang)*rad,.3+rise*3.4,Math.sin(ang)*rad);st.rotation.y=t*3+i;st.scale.setScalar(tw*(1-rise*.4))});
+ const status=p.emoji||({meditating:'🌿 靜心中',praying:'✨ 祈福中',queue:'🌟 等候中',blessing:'💫 補運中',resting:'🍵 休息中'}[p.state]||'');
  if(a.name!==p.name){a.name=p.name;a.tag.lastChild.textContent=p.name}if(a.status!==status){a.status=status;a.tag.firstChild.textContent=status;a.tag.firstChild.hidden=!status}
  a.h=h;
  }
@@ -397,7 +409,9 @@ export class Garden3D{
  const mine=this.actors.get(this.uid);
  if(mine&&cam.follow){const k=Math.min(1,dt*6);cam.t.x+=(mine.X-cam.t.x)*k;cam.t.z+=(mine.Z-cam.t.z)*k;cam.t.y+=(mine.y-cam.t.y)*k}
  if(this.spinTo!==undefined){cam.yaw+=(this.spinTo-cam.yaw)*Math.min(1,dt*7);if(Math.abs(this.spinTo-cam.yaw)<.005){cam.yaw=this.spinTo;this.spinTo=undefined}}
- const cp=Math.cos(cam.pitch);this.camera.position.set(cam.t.x+Math.sin(cam.yaw)*cp*cam.dist,cam.t.y+1+Math.sin(cam.pitch)*cam.dist,cam.t.z+Math.cos(cam.yaw)*cp*cam.dist);this.camera.lookAt(cam.t.x,cam.t.y+1,cam.t.z);
+ // 自己補運時鏡頭回到人物身上並拉近一些
+ const blessed=me&&me.state==='blessing';if(blessed)cam.follow=true;const want=blessed?Math.min(cam.dist,15):cam.dist;this.distNow=this.distNow===undefined?want:this.distNow+(want-this.distNow)*Math.min(1,dt*4);
+ const cp=Math.cos(cam.pitch),cd=this.distNow;this.camera.position.set(cam.t.x+Math.sin(cam.yaw)*cp*cd,cam.t.y+1+Math.sin(cam.pitch)*cd,cam.t.z+Math.cos(cam.yaw)*cp*cd);this.camera.lookAt(cam.t.x,cam.t.y+1,cam.t.z);
  const cpos=this.camera.position;this.walls.n.visible=cpos.z>-16;this.walls.s.visible=cpos.z<16;this.walls.w.visible=cpos.x>-22;this.walls.e.visible=cpos.x<22;
  // 自己走進或靠近靜心亭時，屋頂變透明，才看得到亭子裡的人
  const underRoof=mine&&Math.hypot(mine.X-PAV.x,mine.Z-PAV.z)<5.2?.18:1;if(Math.abs(underRoof-this.roofOpacity)>.01){this.roofOpacity+=(underRoof-this.roofOpacity)*Math.min(1,dt*6);for(const m of this.pavRoof){m.opacity=this.roofOpacity;m.depthWrite=this.roofOpacity>.9}}
@@ -414,7 +428,7 @@ export class Garden3D{
  for(const a of this.actors.values())place(a.tag,a.root.position.x,a.root.position.y+a.h+.25,a.root.position.z);
  if(!this.spotTags){this.spotTags=NAMES.map((n,i)=>{const b=document.createElement('button');b.type='button';b.className='g3-spot';b.dataset.spot=String(i);b.textContent=['🌸','🎋','🌿','✨','🍵'][i]+' '+n;this.labels.append(b);return b})}
  this.spotTags.forEach((b,i)=>place(b,TAG_AT[i][0],TAG_AT[i][1],TAG_AT[i][2]));
- let near=-1;if(mine){let best=2.6;STAND.forEach(([X,Z],i)=>{const d=Math.hypot(mine.X-X,mine.Z-Z);if(d<best){best=d;near=i}})}
+ let near=-1;const busy=this.players[this.uid]?.state;if(mine&&busy!=='blessing'&&busy!=='queue'){let best=2.6;STAND.forEach(([X,Z],i)=>{const d=Math.hypot(mine.X-X,mine.Z-Z);if(d<best){best=d;near=i}})}
  if(near!==this.near){this.near=near;this.prompt.hidden=near<0;if(near>=0)this.prompt.textContent='進入 '+NAMES[near]+(matchMedia('(pointer: coarse)').matches?'':'（E）')}
  }
 }
