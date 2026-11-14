@@ -203,17 +203,27 @@ export class Garden3D{
  this.lantern(g,-2.8,3.2,3.3);this.lantern(g,2.8,3.2,3.3);
  const sign=put(g,new THREE.CircleGeometry(.5,24),new THREE.MeshBasicMaterial({map:signTexture('靜','#fff8ec','#62b6ae')}),0,3.86,2.98,{cast:false});sign.renderOrder=1;
  }
- blossomTree(x,z,scale,rand,big){
- const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rand()*6;this.scene.add(g);
- const h=(big?3.4:2.3)*scale;
- put(g,cyl(.24*scale*(big?2:1),.4*scale*(big?2:1),h,8),mat(C.trunk),0,h/2,0,{rz:.08});
- put(g,cyl(.14*scale,.2*scale,h*.5,6),mat(C.trunk),.5*scale,h*.95,0,{rz:-.7});put(g,cyl(.14*scale,.2*scale,h*.5,6),mat(C.trunk),-.5*scale,h*.95,.1,{rz:.7});
- const n=big?70:26,spread=(big?3.7:1.75)*scale;
- for(let i=0;i<n;i++){const a=rand()*Math.PI*2,r=Math.sqrt(rand())*spread,y=h+(big?1.3:1)*scale+(rand()-.35)*spread*.6-r*r/spread*.32;
- const p=new THREE.Vector3(Math.cos(a)*r,y,Math.sin(a)*r).applyAxisAngle(new THREE.Vector3(0,1,0),g.rotation.y).add(g.position);this.blossoms.push([p,(big?.8:.62)*scale*(.7+rand()*.55),Math.floor(rand()*3)])}
+ // 梅樹（沒事）：深色枝幹曲折向上，枝條清楚可見，花朵小而疏，沿著枝條開
+ plumTree(x,z,scale,rand,big){
+ const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=big?0:rand()*6;this.scene.add(g);g.updateMatrixWorld();
+ const k=scale*(big?1.9:1),bark=mat('#6b4a44'),tips=[];
+ const limb=(a,b,r)=>{stick(g,a,b,r,bark);tips.push([a,b])};
+ const top=[.25*k,2.1*k,0];limb([0,0,0],top,.3*k);
+ const n=big?7:5;for(let i=0;i<n;i++){const a=i/n*Math.PI*2+rand()*.5,len=(1.5+rand()*.7)*k,mid=[top[0]+Math.cos(a)*len*.55,top[1]+len*.45,top[2]+Math.sin(a)*len*.55],end=[mid[0]+Math.cos(a+.5)*len*.55,mid[1]+len*.38,mid[2]+Math.sin(a+.5)*len*.55];
+ limb(top,mid,.15*k);limb(mid,end,.09*k);if(i%2===0)limb(mid,[mid[0]+Math.cos(a-.9)*len*.45,mid[1]+len*.3,mid[2]+Math.sin(a-.9)*len*.45],.07*k)}
+ for(const [a,b] of tips.slice(1))for(let m=0;m<(big?13:5);m++){const t=.25+rand()*.8,p=new THREE.Vector3(a[0]+(b[0]-a[0])*t+(rand()-.5)*.5*k,a[1]+(b[1]-a[1])*t+(rand()-.3)*.45*k,a[2]+(b[2]-a[2])*t+(rand()-.5)*.5*k);g.localToWorld(p);const r=(.2+rand()*.16)*k*(big?.5:1);this.blossoms.push([p,r,r,r,Math.floor(rand()*3)])}
+ return g}
+ // 青松（輕鬆）：微彎的樹幹，一層層扁平的松針雲片
+ pineTree(x,z,scale,rand){
+ const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rand()*6;this.scene.add(g);g.updateMatrixWorld();
+ const k=scale,bark=mat('#8a5a48'),lean=(rand()-.5)*.5,h=4.2*k,mid=[lean*k,h*.5,0],top=[lean*1.6*k,h,.15*k];
+ stick(g,[0,0,0],mid,.3*k,bark);stick(g,mid,top,.22*k,bark);
+ const pad=(px,py,pz,r)=>{const p=new THREE.Vector3(px,py,pz);g.localToWorld(p);this.blossoms.push([p,r*1.25,r*.42,r,3+Math.floor(rand()*3)])};
+ [[.42,1.5],[.6,1.3],[.78,1.05],[.95,.8]].forEach(([t,r],lv)=>{const y=h*t,cx=lean*(lv<2?1:1.6)*k*t*1.6;const arms=lv===3?1:2+(lv%2);
+ for(let i=0;i<arms;i++){const a=i/arms*Math.PI*2+lv*1.3+rand()*.4,d=lv===3?0:(1.25-lv*.22)*k;if(d)stick(g,[cx,y-.25*k,0],[cx+Math.cos(a)*d,y,Math.sin(a)*d],.08*k,bark);pad(cx+Math.cos(a)*d,y+.18*k,Math.sin(a)*d,r*k);pad(cx+Math.cos(a+.6)*d*.55,y+.42*k,Math.sin(a+.6)*d*.55,r*k*.7)}});
  return g}
  buildWishTree(rand){
- this.blossoms=[];const g=this.blossomTree(TREE.x,TREE.z,1.25,rand,true);g.rotation.y=0;
+ this.blossoms=[];const g=this.plumTree(TREE.x,TREE.z,1.25,rand,true);
  put(g,cyl(1.9,2.1,.3,20),mat('#efe3d2'),0,.15,0);put(g,cyl(1.7,1.7,.32,20),mat(C.grass2),0,.16,0,{cast:false});
  for(let i=0;i<12;i++){const a=i/12*Math.PI*2,r=2.4+(i%3)*.5,card=new THREE.Group();card.position.set(Math.cos(a)*r,4.1+(i%2)*.4,Math.sin(a)*r);g.add(card);
  put(card,cyl(.015,.015,.7,4),mat('#d2504a'),0,-.35,0,{cast:false});put(card,box(.34,.56,.04),mat(i%3?'#ffe1ea':'#fff3d6'),0,-.95,0,{ry:a});this.swayers.push({o:card,amp:.16,sp:1.4,ph:i})}
@@ -283,10 +293,11 @@ export class Garden3D{
  buildNature(rand){
  const s=this.scene;
  const trees=[[-19.5,-13.5,1.25],[-7,-14,1.1],[7.5,-14.2,1],[19.5,-13.5,1.3],[-20,2,1.15],[-19.5,13,1.3],[-15.2,6.4,1.05],[-9.5,14,1],[11,14,1.05],[19.8,13,1.25],[20,-3,1.1],[19.6,9.4,.95],[-5.5,-7.5,.9],[6.2,-6.4,.85],[-18.5,-6.5,.9]];
- for(const [x,z,k] of trees){this.blossomTree(x,z,k,rand,false);SOLIDS.push([x,z,.55])}
- // 花球用三種粉色的實例化網格一次畫完
- const geo=ball(1,2),groups=[C.pink,C.pink2,C.pink3].map(c=>new THREE.InstancedMesh(geo,mat(c),this.blossoms.length)),counts=[0,0,0],d=new THREE.Object3D();
- for(const [p,r,c] of this.blossoms){d.position.copy(p);d.scale.setScalar(r);d.updateMatrix();groups[c].setMatrixAt(counts[c]++,d.matrix)}
+ // 青松與梅樹交錯種植：輕鬆、沒事
+ trees.forEach(([x,z,k],i)=>{if(i%2)this.plumTree(x,z,k*1.15,rand,false);else this.pineTree(x,z,k,rand);SOLIDS.push([x,z,.55])});
+ // 梅花（三種紅粉白）與松針雲片（三種綠）各用一個實例化網格畫完
+ const geo=ball(1,2),groups=['#f08fb4','#fde3ec','#e2567f','#4f9a6a','#3f8a5e','#6bb37f'].map(c=>new THREE.InstancedMesh(geo,mat(c),this.blossoms.length)),counts=groups.map(()=>0),d=new THREE.Object3D();
+ for(const [p,sx,sy,sz,c] of this.blossoms){d.position.copy(p);d.scale.set(sx,sy,sz);d.updateMatrix();groups[c].setMatrixAt(counts[c]++,d.matrix)}
  groups.forEach((m,i)=>{m.count=counts[i];m.castShadow=true;m.receiveShadow=true;s.add(m)});
  const rocks=[[-17,-10.5,1.3],[-16,-11.8,.8],[17,-12,1.2],[9,-12.6,.8],[-20,8,1],[-9.5,5,.75],[20,9.5,1.1],[-3,13.5,.7],[15,12,.9],[-20,-2,.8],[9.6,-2.4,.6],[-17,-9,.6]];
  for(const [x,z,r] of rocks){put(s,ball(r,1),mat(rand()<.5?C.rock:C.rock2),x,r*.45,z,{s:[1.15,.8,1],ry:rand()*3});SOLIDS.push([x,z,r*.9])}
