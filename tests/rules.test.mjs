@@ -1,0 +1,32 @@
+import {initializeTestEnvironment,assertSucceeds,assertFails} from '@firebase/rules-unit-testing';
+import {readFileSync} from 'node:fs';
+import {test,after,beforeEach} from 'node:test';
+import {ref,set,get,runTransaction,serverTimestamp} from 'firebase/database';
+const env=await initializeTestEnvironment({projectId:'demo-garden',database:{rules:readFileSync('database.rules.json','utf8')}});
+after(()=>env.cleanup());beforeEach(()=>env.clearDatabase());
+const db=u=>env.authenticatedContext(u).database();
+const player={name:'小光',color:'#80a891',style:'human',x:400,y:300,state:'walking',updatedAt:Date.now()};
+test('own character allowed; other UID and malformed fields denied',async()=>{await assertSucceeds(set(ref(db('a'),'players/a'),player));await assertFails(set(ref(db('b'),'players/a'),player));await assertFails(set(ref(db('a'),'players/a'),{...player,x:9999}));await assertFails(set(ref(db('a'),'players/a'),{...player,admin:true}));});
+test('anonymous unauthenticated reads denied; root remains locked',async()=>{await assertFails(get(ref(env.unauthenticatedContext().database(),'players')));await assertFails(get(ref(db('a'),'/')));});
+test('private wishes only owner; public content validation',async()=>{const w={uid:'a',text:'希望我每天進步',createdAt:serverTimestamp()};await assertSucceeds(set(ref(db('a'),'privateWishes/a/one'),w));await assertFails(get(ref(db('b'),'privateWishes/a')));await assertFails(set(ref(db('b'),'privateWishes/a/two'),{...w,uid:'b'}));await assertSucceeds(set(ref(db('a'),'publicWishes/one'),w));await assertFails(set(ref(db('b'),'publicWishes/one'),{...w,uid:'b'}));await assertFails(set(ref(db('a'),'publicWishes/bad'),{...w,text:'去死'}));});
+test('queue uses transactions, prevents other UID writes and backdating',async()=>{await assertSucceeds(runTransaction(ref(db('a'),'queue/a'),()=>({joinedAt:serverTimestamp()})));await assertFails(set(ref(db('b'),'queue/a'),null));await assertFails(set(ref(db('b'),'queue/b'),{joinedAt:1}));});
+test('two authenticated clients receive real realtime presence and movement', async () => {
+  const a = db('a'), b = db('b');
+  await set(ref(a, 'players/a'), player);
+  await set(ref(b, 'players/b'), {...player, name: '小花'});
+  const {onValue, update} = await import('firebase/database');
+  let unsubscribe = () => {};
+  let timer;
+  try {
+    await new Promise((resolve, reject) => {
+      timer = setTimeout(() => reject(Error('sync timeout')), 5000);
+      unsubscribe = onValue(ref(b, 'players'), snap => {
+        if (snap.child('a/x').val() === 430 && snap.size === 2) resolve();
+      }, reject);
+      update(ref(a, 'players/a'), {x: 430}).catch(reject);
+    });
+  } finally {
+    clearTimeout(timer);
+    unsubscribe();
+  }
+});
