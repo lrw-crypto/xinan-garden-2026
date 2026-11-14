@@ -9,6 +9,8 @@ Vite + TypeScript + Phaser 3 + Firebase Authentication / Realtime Database。庭
 npm ci --cache /tmp/npm-cache
 npm run build
 npm test
+npx playwright install chromium
+npm run test:browser
 npm run dev
 ```
 正式 Firebase 設定在 src/firebase.ts。資料庫鎖定時會明確顯示權限錯誤，不會以假人數冒充多人連線。
@@ -47,7 +49,7 @@ Emulator 模式只連到本機 9099/9000，不寫入正式資料庫。禁止將 
 
 ## GitHub Pages
 儲存庫 Settings → Pages → Source 選 GitHub Actions。
-PR 執行安全規則測試與建置；合併 main 後 workflow 才部署。
+PR 執行安全規則測試、兩個獨立 Chromium 情境（桌面與手機寬度）的登入／互動測試與建置；合併 main 後 workflow 才部署。
 預定網址：https://lrw-crypto.github.io/xinan-garden-2026/
 Vite base 已設定 /xinan-garden-2026/。部署不包含 Firebase 規則。
 雲端主機先完成本機測試，不會直接覆蓋 main。
@@ -61,8 +63,11 @@ Vite base 已設定 /xinan-garden-2026/。部署不包含 Firebase 規則。
 - database.rules.json：預設拒絕的 RTDB 規則
 - tests/rules.test.mjs：允許、拒絕與雙用戶同步測試
 - tests/browser.mjs：桌面與手機雙瀏覽器互動驗證
+- tests/run-browser.mjs：自動啟停測試用 Vite 伺服器
 - .github/workflows/pages.yml：測試、建置、Pages 發布
 
 ## 開發環境
 既有 checkout 位於 /workspace/xinan-garden-2026，每個雲端任務已隔離，不需額外 worktree。
 npm ci --cache /tmp/npm-cache 可避開受限的家目錄快取路徑。
+
+瀏覽器整合測試：執行 npm run test:browser，會自動啟動 Emulator 與 5174 埠測試伺服器。需要已安裝 Chromium（本機 /usr/bin/chromium 或 Playwright Chromium）。CI 上傳 browser-results 截圖供檢查。此為 Chromium 模擬手機寬度，尚不代表真實 iPhone Safari 驗證。
