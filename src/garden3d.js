@@ -452,11 +452,11 @@ export class Garden3D{
  stop(){this.target=undefined;this.path=undefined;this.pendingSpot=-1}
  doJump(){if(this.jump.y===0&&this.players[this.uid])this.jump.v=6.2}
 
- // ── 人物：面向鏡頭的立牌，胸口疊上原始校徽 ──
+ // ── 人物：面向鏡頭的立牌 ──
  actor(id){
  let a=this.actors.get(id);if(a)return a;
  const o=this.opts;
- if(!this.tex){this.tex={};this.geo={};const e=new THREE.TextureLoader().load(o.emblemUrl);e.colorSpace=THREE.SRGBColorSpace;e.anisotropy=8;this.emblemMat=new THREE.MeshBasicMaterial({map:e,transparent:true,alphaTest:.3});
+ if(!this.tex){this.tex={};this.geo={};
  this.unit=new THREE.PlaneGeometry(1,1);this.unit.translate(0,.5,0);this.unitC=new THREE.PlaneGeometry(1,1);
  // 每個造型有正面、背面、側面、坐姿四張圖，用到才載入
  this.figTex=k=>{if(!this.tex[k]){const t=new THREE.TextureLoader().load(o.assetBase+'art/figures/'+k+'.webp');t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;this.tex[k]=new THREE.MeshBasicMaterial({map:t,alphaTest:.5,side:THREE.DoubleSide})}return this.tex[k]};
@@ -464,8 +464,8 @@ export class Garden3D{
  this.figGeo=(k,d)=>{if(!this.geo[k]){const L=d.legs;this.geo[k]=!L?null:L.split!==undefined?{upper:partGeo(0,1,0,L.cut+.012,.5,1),a:partGeo(0,L.split,L.cut-.02,1,L.l,L.cut+.01),b:partGeo(L.split,1,L.cut-.02,1,L.r,L.cut+.01),ax:L.l,bx:L.r}:{upper:partGeo(0,1,0,L.cut+.012,.5,1),a:partGeo(0,1,L.cut-.02,1,L.pivot,L.cut+.01),b:partGeo(0,1,L.cut-.02,1,L.pivot,L.cut+.01),ax:L.pivot,bx:L.pivot}}return this.geo[k]}}
  const root=new THREE.Group(),bill=new THREE.Group(),fig=new THREE.Group();
  // rig 內的座標以「腳底中央」為原點、圖高為 1；body 是上半身（坐姿時是整張圖），兩條腿各自以髖部為支點
- const rig=new THREE.Group(),body=new THREE.Mesh(this.unit),legL=new THREE.Mesh(this.unit),legR=new THREE.Mesh(this.unit),emblem=new THREE.Mesh(this.unitC,this.emblemMat);emblem.renderOrder=2;
- body.position.z=.004;rig.add(legL,legR,body);fig.add(rig,emblem);bill.add(fig);root.add(bill);
+ const rig=new THREE.Group(),body=new THREE.Mesh(this.unit),legL=new THREE.Mesh(this.unit),legR=new THREE.Mesh(this.unit);
+ body.position.z=.004;rig.add(legL,legR,body);fig.add(rig);bill.add(fig);root.add(bill);
  const shadow=put(root,new THREE.CircleGeometry(.5,20),new THREE.MeshBasicMaterial({color:'#3e352d',transparent:true,opacity:.2,depthWrite:false}),0,.03,0,{rx:-Math.PI/2,cast:false});
  const ring=put(root,new THREE.RingGeometry(.52,.62,28),new THREE.MeshBasicMaterial({color:'#fff',transparent:true,opacity:.95,depthWrite:false}),0,.04,0,{rx:-Math.PI/2,cast:false});
  const stars=[0,1,2,3,4,5,6,7].map(()=>put(root,new THREE.OctahedronGeometry(.13),mat(C.gold,{emissive:'#ffd66b',emissiveIntensity:1}),0,1,0,{cast:false}));
@@ -476,7 +476,7 @@ export class Garden3D{
  outer.position.y=inner.position.y=3.5;halo.rotation.x=-Math.PI/2;halo.position.y=.2;beam.add(outer,inner,halo);beam.userData={outer,inner,halo};
  const tag=document.createElement('div');tag.className='g3-tag';tag.innerHTML='<span class="g3-status" hidden></span><span class="g3-name"></span>';this.labels.append(tag);
  this.scene.add(root);
- a={root,bill,fig,rig,beam,body,legL,legR,phase:0,walk:0,side:1,key:'',emblem,shadow,ring,stars,tag,X:NaN,Z:0,y:0,flip:1,movingUntil:0,seed:this.actors.size*1.7,name:'',status:''};this.actors.set(id,a);return a}
+ a={root,bill,fig,rig,beam,body,legL,legR,phase:0,walk:0,side:1,key:'',shadow,ring,stars,tag,X:NaN,Z:0,y:0,flip:1,movingUntil:0,seed:this.actors.size*1.7,name:'',status:''};this.actors.set(id,a);return a}
 
  frame(t,dt){
  const cam=this.cam,me=this.players[this.uid];
@@ -529,7 +529,6 @@ export class Garden3D{
  if(P){const cy=1-d.legs.cut-.01;a.body.geometry=P.upper;a.legL.geometry=P.a;a.legL.position.set(P.ax-.5,cy,-.002);a.legR.geometry=P.b;a.legR.position.set(P.bx-.5,cy,-.004)}else a.body.geometry=this.unit;a.body.position.set(0,0,.004)}
  // 側面圖原本朝左，往右走時左右翻轉；正面與背面不翻轉
  const face=pose==='side'?a.flip:1;a.rig.scale.set(w*face,full,1);
- a.emblem.visible=Boolean(d.emblem);if(d.emblem){const es=w*d.emblem[2];a.emblem.scale.set(es,es,1);a.emblem.position.set((d.emblem[0]-.5)*w,(1-d.emblem[1])*full,.02)}
  // 走路：側面時兩腿前後擺動；正面與背面時兩腿交替抬起並微微左右擺。身體每一步輕輕起伏。
  const k=seated||this.reduceMotion?0:a.walk,sw=Math.sin(a.phase),sideways=pose==='side';
  a.legL.rotation.z=sw*(sideways?.26:.07)*k;a.legR.rotation.z=-sw*(sideways?.26:.07)*k;

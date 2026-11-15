@@ -5,7 +5,7 @@ export const spots:{name:string;x:number;y:number}[];
 /** 場景內固定站位，皆為資料庫座標。 */
 export const places:{spawn:Point;hutDoor:Point;queue:(index:number)=>Point};
 export class Garden3D{
-  constructor(host:HTMLElement,opts:{assetBase:string;emblemUrl:string;figures:{ref:number;styles:Record<string,Record<string,{w:number;h:number;emblem?:number[];legs?:Record<string,number>}>>}});
+  constructor(host:HTMLElement,opts:{assetBase:string;figures:{ref:number;styles:Record<string,Record<string,{w:number;h:number;emblem?:number[];legs?:Record<string,number>}>>}});
   /** false 表示瀏覽器無法建立 WebGL，庭院不顯示，但其餘介面仍可使用。 */
   ok:boolean;
   players:Record<string,Player>;
