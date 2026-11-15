@@ -1,4 +1,4 @@
-// 草商輔導寺 3D 庭院：以程式建模的黏土風小院，鏡頭跟隨人物，可平移、旋轉、縮放。
+// 輔導寺 3D 庭院：以程式建模的黏土風小院，鏡頭跟隨人物，可平移、旋轉、縮放。
 // 所有模型都由基本幾何體組成，沒有使用任何外部模型或他人素材。
 // 型別宣告在 garden3d.d.ts；本檔是純 JavaScript，方便在沒有建置工具時直接預覽。
 import * as THREE from './vendor/three.module.min.js';
@@ -105,7 +105,7 @@ export class Garden3D{
  this.cam={yaw:.5,pitch:.8,dist:host.clientWidth<600?24:27,follow:true,mode:'pan',t:new THREE.Vector3(0,0,6)};
  this.jump={y:0,v:0};this.pendingSpot=-1;this.wishSlot=0;this.swayers=[];this.animated=[];
  host.classList.add('g3');
- host.innerHTML='<canvas class="g3-canvas" aria-label="草商輔導寺 3D 庭院"></canvas><div class="g3-labels"></div><div class="g3-hint"></div><button type="button" class="g3-prompt" hidden></button><div class="g3-toast" role="status" hidden></div><div class="g3-cheer" hidden><p></p><div><button type="button" data-cheer="💪 加油">加油</button><button type="button" data-cheer="💛 謝謝">謝謝</button><button type="button" data-cheer="🌷 陪伴">陪伴</button><button type="button" data-cheer="" aria-label="取消">×</button></div></div><div class="g3-swipe" hidden><p></p><div class="g3-pips" aria-hidden="true"></div><button type="button">接引聖光</button></div><div class="g3-hud"><button type="button" data-act="jump" aria-label="跳躍">跳躍</button><button type="button" data-act="home" aria-label="找自己">找自己</button><button type="button" data-act="mode" aria-label="切換拖曳方式">拖曳：平移</button><button type="button" data-act="spin" aria-label="旋轉視角">⟳</button><button type="button" data-act="in" aria-label="放大">＋</button><button type="button" data-act="out" aria-label="縮小">－</button></div>';
+ host.innerHTML='<canvas class="g3-canvas" aria-label="輔導寺 3D 庭院"></canvas><div class="g3-labels"></div><div class="g3-hint"></div><button type="button" class="g3-prompt" hidden></button><div class="g3-toast" role="status" hidden></div><div class="g3-cheer" hidden><p></p><div><button type="button" data-cheer="💪 加油">加油</button><button type="button" data-cheer="💛 謝謝">謝謝</button><button type="button" data-cheer="🌷 陪伴">陪伴</button><button type="button" data-cheer="" aria-label="取消">×</button></div></div><div class="g3-swipe" hidden><p></p><div class="g3-pips" aria-hidden="true"></div><button type="button">接引聖光</button></div><div class="g3-hud"><button type="button" data-act="jump" aria-label="跳躍">跳躍</button><button type="button" data-act="home" aria-label="找自己">找自己</button><button type="button" data-act="mode" aria-label="切換拖曳方式">拖曳：平移</button><button type="button" data-act="spin" aria-label="旋轉視角">⟳</button><button type="button" data-act="in" aria-label="放大">＋</button><button type="button" data-act="out" aria-label="縮小">－</button></div>';
  this.canvas=host.querySelector('canvas');this.labels=host.querySelector('.g3-labels');this.prompt=host.querySelector('.g3-prompt');this.hint=host.querySelector('.g3-hint');
  this.hint.textContent=matchMedia('(pointer: coarse)').matches?'點地面走路・拖曳平移・雙指縮放與旋轉':'點地面或 WASD 走路・空白鍵跳躍・E 互動・滾輪縮放・右鍵拖曳旋轉';
  try{this.renderer=new THREE.WebGLRenderer({canvas:this.canvas,antialias:true,powerPreference:'low-power'})}
@@ -330,7 +330,7 @@ export class Garden3D{
  this.cam.follow=false;this.cam.t.set(SAGE.x,1.4,SAGE.z);
  return new Promise(done=>{s.done=done})}
  buildGate(){
- // 山門：正門口的牌樓，匾額寫「草商輔導寺」。不隨南牆隱藏；鏡頭貼近時變半透明，避免擋住人物。
+ // 山門：正門口的牌樓，匾額寫「輔導寺」。不隨南牆隱藏；鏡頭貼近時變半透明，避免擋住人物。
  const g=new THREE.Group();g.position.set(0,0,16.6);this.scene.add(g);this.gate=g;
  for(const sx of [-1,1]){put(g,cyl(.34,.36,5.2,12),mat(C.column),sx*3.5,2.6,0);put(g,box(1,.45,1),mat('#efe3d2'),sx*3.5,.22,0);this.lantern(g,sx*2.5,3.5,.1)}
  put(g,box(8.6,.4,.55),mat(C.woodDark),0,5,0);put(g,box(7.6,.3,.45),mat(C.woodDark),0,3.55,0);
@@ -338,7 +338,7 @@ export class Garden3D{
  // 匾額掛在屋簷前緣並微微上仰，從高處往下看也讀得到
  const board=new THREE.Group();board.position.set(0,4.05,1.5);board.rotation.x=-.5;g.add(board);
  put(board,box(5.9,1.45,.16),mat(C.gold),0,0,-.02);put(board,box(5.6,1.2,.2),mat('#8f2f35'),0,0,0);
- const cv=document.createElement('canvas');cv.width=1024;cv.height=220;const x=cv.getContext('2d');x.fillStyle='#8f2f35';x.fillRect(0,0,1024,220);x.fillStyle='#ffe08a';x.font='bold 150px "Noto Serif TC","Noto Sans TC",serif';x.textAlign='center';x.textBaseline='middle';x.fillText('草商輔導寺',512,118);
+ const cv=document.createElement('canvas');cv.width=1024;cv.height=220;const x=cv.getContext('2d');x.fillStyle='#8f2f35';x.fillRect(0,0,1024,220);x.fillStyle='#ffe08a';x.font='bold 150px "Noto Serif TC","Noto Sans TC",serif';x.textAlign='center';x.textBaseline='middle';x.fillText('輔導寺',512,118);
  const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;
  const sign=put(board,new THREE.PlaneGeometry(5.4,1.16),new THREE.MeshBasicMaterial({map:t}),0,0,.11,{cast:false});
  // 院內那一面也掛一塊
