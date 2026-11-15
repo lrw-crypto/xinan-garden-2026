@@ -422,6 +422,8 @@ export class Garden3D{
  let a=this.actors.get(id);if(a)return a;
  const tl=new THREE.TextureLoader(),o=this.opts;
  if(!this.tex){this.tex={};for(const k of Object.keys(o.anchors)){const t=tl.load(o.assetBase+'art/students/'+k+'.webp');t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;this.tex[k]=new THREE.MeshBasicMaterial({map:t,alphaTest:.5,side:THREE.DoubleSide})}
+ // 背面圖：往遠離鏡頭的方向走時使用，和站姿圖同尺寸（後腦勺是頭髮、沒有校徽）
+ for(const k of Object.keys(LEGS)){const t=tl.load(o.assetBase+'art/students/'+k.replace('-standing','-back')+'.webp');t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;this.tex[k.replace('-standing','-back')]=new THREE.MeshBasicMaterial({map:t,alphaTest:.5,side:THREE.DoubleSide})}
  const e=tl.load(o.emblemUrl);e.colorSpace=THREE.SRGBColorSpace;e.anisotropy=8;this.emblemMat=new THREE.MeshBasicMaterial({map:e,transparent:true,alphaTest:.3});
  this.unit=new THREE.PlaneGeometry(1,1);this.unit.translate(0,.5,0);this.unitC=new THREE.PlaneGeometry(1,1);
  this.parts={};for(const [k,L] of Object.entries(LEGS))this.parts[k]={upper:partGeo(0,1,0,L.cut+.012,.5,1),legL:partGeo(0,L.split,L.cut-.02,1,L.l,L.cut+.01),legR:partGeo(L.split,1,L.cut-.02,1,L.r,L.cut+.01)}}
@@ -473,7 +475,9 @@ export class Garden3D{
  const gap=Math.hypot(tx-a.X,tz-a.Z);let nx=tx,nz=tz;
  if(!local&&gap>.05&&gap<12){const step=Math.min(gap,Math.max(gap*5,1.2)*dt);nx=a.X+(tx-a.X)/gap*step;nz=a.Z+(tz-a.Z)/gap*step}
  const dx=nx-a.X,dz=nz-a.Z;const moved=Math.hypot(dx,dz),speed=dt>0?moved/dt:0;
- if(moved>.0005){const side=dx*camRight.x+dz*camRight.z;if(Math.abs(side)>moved*.25)a.flip=side<0?-1:1;a.side+=(Math.min(1,Math.abs(side)/moved)-a.side)*Math.min(1,dt*8);a.phase+=moved/STRIDE*Math.PI}
+ if(moved>.0005){const side=dx*camRight.x+dz*camRight.z,away=-(dx*Math.sin(cam.yaw)+dz*Math.cos(cam.yaw));if(Math.abs(side)>moved*.25)a.flip=side<0?-1:1;
+ // 面向：往鏡頭遠處走時轉身露出背面，往鏡頭走或橫向走時是正面（留一點緩衝，避免在臨界角度來回翻面）
+ if(away>moved*.45)a.back=true;else if(away<moved*.2)a.back=false;a.side+=(Math.min(1,Math.abs(side)/moved)-a.side)*Math.min(1,dt*8);a.phase+=moved/STRIDE*Math.PI}
  a.walk+=((speed>.5?1:0)-a.walk)*Math.min(1,dt*(speed>.5?14:9));
  a.X=nx;a.Z=nz;
  const seated=p.state==='meditating'||p.state==='resting',base=spriteBase(p.style);
@@ -485,9 +489,10 @@ export class Garden3D{
  a.bill.quaternion.copy(this.camera.quaternion);
  // 立牌面向鏡頭時頭會往後仰，容易插進椅背或牆面；沿視線把立牌往鏡頭方向挪一點（畫面上的位置與大小幾乎不變），就不會被身後的東西切掉一半
  const toCam=this.camera.position.clone().sub(a.root.position).normalize();a.bill.position.copy(toCam.multiplyScalar(h*Math.sin(cam.pitch)*.95));
- if(a.key!==key){a.key=key;const P=this.parts[key];a.body.material=a.legL.material=a.legR.material=this.tex[key];
+ const showBack=Boolean(a.back)&&!seated,texKey=showBack?key.replace('-standing','-back'):key;if(a.texKey!==texKey){a.texKey=texKey;a.body.material=a.legL.material=a.legR.material=this.tex[texKey]}
+ if(a.key!==key){a.key=key;const P=this.parts[key];
  if(P){const L=LEGS[key];a.body.geometry=P.upper;a.body.position.set(0,0,.004);a.legL.geometry=P.legL;a.legL.position.set(L.l-.5,1-L.cut-.01,0);a.legR.geometry=P.legR;a.legR.position.set(L.r-.5,1-L.cut-.01,0)}else{a.body.geometry=this.unit;a.body.position.set(0,0,.004)}}
- a.legL.visible=a.legR.visible=Boolean(this.parts[key])&&!tucked;a.rig.scale.set(w*a.flip,full,1);a.rig.position.y=-drop;
+ a.legL.visible=a.legR.visible=Boolean(this.parts[key])&&!tucked;const face=showBack?-a.flip:a.flip;a.rig.scale.set(w*face,full,1);a.rig.position.y=-drop;a.emblem.visible=!showBack;
  const es=w*an.size;a.emblem.scale.set(es,es,1);a.emblem.position.set((an.x-.5)*w*a.flip,(1-an.y)*full-drop,.02);
  // 走路：兩腿交替。橫向移動時前後擺腿，朝鏡頭或遠離鏡頭時改為交替抬腳；身體每一步輕輕起伏。
  const k=seated||this.reduceMotion?0:a.walk,sw=Math.sin(a.phase),swing=.5*a.side*k,raise=(.07+.11*(1-a.side))*k;
