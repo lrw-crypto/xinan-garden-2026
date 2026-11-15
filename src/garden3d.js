@@ -330,19 +330,27 @@ export class Garden3D{
  this.cam.follow=false;this.cam.t.set(SAGE.x,1.4,SAGE.z);
  return new Promise(done=>{s.done=done})}
  buildGate(){
+ // 山門：正門口的牌樓，匾額寫「草商輔導寺」。不隨南牆隱藏；鏡頭貼近時變半透明，避免擋住人物。
  const g=new THREE.Group();g.position.set(0,0,16.6);this.scene.add(g);this.gate=g;
- for(const sx of [-1,1]){put(g,cyl(.3,.32,4,12),mat(C.column),sx*2.6,2,0);put(g,box(.9,.4,.9),mat('#efe3d2'),sx*2.6,.2,0);this.lantern(g,sx*1.8,3,.1)}
- put(g,box(6.6,.36,.5),mat(C.woodDark),0,3.7,0);put(g,box(3.2,.7,.2),mat(C.wall),0,3.15,0);
- this.gableRoof(g,4,6,1.6,1);
- const s=put(g,new THREE.PlaneGeometry(3,.62),new THREE.MeshBasicMaterial({map:(()=>{const c=document.createElement('canvas');c.width=512;c.height=106;const x=c.getContext('2d');x.fillStyle='#fcf0de';x.fillRect(0,0,512,106);x.fillStyle='#8a4a5e';x.font='bold 70px "Noto Sans TC",sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('草商輔導寺',256,58);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t})()}),0,3.15,.11,{cast:false});
- const back=s.clone();back.rotation.y=Math.PI;back.position.z=-.11;g.add(back);
+ for(const sx of [-1,1]){put(g,cyl(.34,.36,5.2,12),mat(C.column),sx*3.5,2.6,0);put(g,box(1,.45,1),mat('#efe3d2'),sx*3.5,.22,0);this.lantern(g,sx*2.5,3.5,.1)}
+ put(g,box(8.6,.4,.55),mat(C.woodDark),0,5,0);put(g,box(7.6,.3,.45),mat(C.woodDark),0,3.55,0);
+ this.gableRoof(g,5.3,8,1.8,1.1);
+ // 匾額掛在屋簷前緣並微微上仰，從高處往下看也讀得到
+ const board=new THREE.Group();board.position.set(0,4.05,1.5);board.rotation.x=-.5;g.add(board);
+ put(board,box(5.9,1.45,.16),mat(C.gold),0,0,-.02);put(board,box(5.6,1.2,.2),mat('#8f2f35'),0,0,0);
+ const cv=document.createElement('canvas');cv.width=1024;cv.height=220;const x=cv.getContext('2d');x.fillStyle='#8f2f35';x.fillRect(0,0,1024,220);x.fillStyle='#ffe08a';x.font='bold 150px "Noto Serif TC","Noto Sans TC",serif';x.textAlign='center';x.textBaseline='middle';x.fillText('草商輔導寺',512,118);
+ const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;
+ const sign=put(board,new THREE.PlaneGeometry(5.4,1.16),new THREE.MeshBasicMaterial({map:t}),0,0,.11,{cast:false});
+ // 院內那一面也掛一塊
+ put(g,box(5.6,1.2,.2),mat('#8f2f35'),0,4.28,-.2);const back=put(g,new THREE.PlaneGeometry(5.4,1.16),sign.material,0,4.28,-.31,{ry:Math.PI,cast:false});
+ this.gateMats=[];g.traverse(o=>{if(o.isMesh){o.material=o.material.clone();o.material.transparent=true;this.gateMats.push(o.material)}});back.material=sign.material;this.gateOpacity=1;
  }
  buildWalls(){
  // 四面矮牆各自成組：鏡頭繞到牆外時，把擋住視線的那一面收起來
  this.walls={n:new THREE.Group(),s:new THREE.Group(),e:new THREE.Group(),w:new THREE.Group()};
  const seg=(s,x,z,w,d)=>{put(s,box(w,1.3,d),mat(C.wall),x,.65,z);put(s,box(w+.3,.24,d+.3),mat(C.roof),x,1.4,z);put(s,cyl(.14,.14,Math.max(w,d)+.3,8),mat(C.roofDark),x,1.58,z,w>d?{rz:Math.PI/2}:{rx:Math.PI/2})};
  seg(this.walls.n,0,-16.6,44,.6);seg(this.walls.w,-22.6,0,.6,33.8);seg(this.walls.e,22.6,0,.6,33.8);seg(this.walls.s,-12.9,16.6,19.4,.6);seg(this.walls.s,12.9,16.6,19.4,.6);
- this.walls.s.add(this.gate);for(const g of Object.values(this.walls))this.scene.add(g);
+ for(const g of Object.values(this.walls))this.scene.add(g);
  }
  buildNature(rand){
  const s=this.scene;
@@ -545,7 +553,9 @@ export class Garden3D{
  // 自己補運時鏡頭回到人物身上並拉近一些
  const blessed=me&&me.state==='blessing';if(blessed)cam.follow=true;const want=blessed?Math.min(cam.dist,15):cam.dist;this.distNow=this.distNow===undefined?want:this.distNow+(want-this.distNow)*Math.min(1,dt*4);
  const cp=Math.cos(cam.pitch),cd=this.distNow;this.camera.position.set(cam.t.x+Math.sin(cam.yaw)*cp*cd,cam.t.y+1+Math.sin(cam.pitch)*cd,cam.t.z+Math.cos(cam.yaw)*cp*cd);this.camera.lookAt(cam.t.x,cam.t.y+1,cam.t.z);
- const cpos=this.camera.position;this.walls.n.visible=cpos.z>-16;this.walls.s.visible=cpos.z<16;this.walls.w.visible=cpos.x>-22;this.walls.e.visible=cpos.x<22;
+ const cpos=this.camera.position;
+ {const want=cpos.z>16.6&&cam.t.z>3&&Math.abs(cam.t.x)<10&&(this.distNow??cam.dist)<36?.18:1;if(Math.abs(want-this.gateOpacity)>.01){this.gateOpacity+=(want-this.gateOpacity)*Math.min(1,dt*6);for(const m of this.gateMats){m.opacity=this.gateOpacity;m.depthWrite=this.gateOpacity>.9}}}
+this.walls.n.visible=cpos.z>-16;this.walls.s.visible=cpos.z<16;this.walls.w.visible=cpos.x>-22;this.walls.e.visible=cpos.x<22;
  // 自己走進或靠近靜心亭時，屋頂變透明，才看得到亭子裡的人
  const underRoof=mine&&Math.hypot(mine.X-PAV.x,mine.Z-PAV.z)<5.2?.18:1;if(Math.abs(underRoof-this.roofOpacity)>.01){this.roofOpacity+=(underRoof-this.roofOpacity)*Math.min(1,dt*6);for(const m of this.pavRoof){m.opacity=this.roofOpacity;m.depthWrite=this.roofOpacity>.9}}
  // 數學上神：面向鏡頭的立牌；寫字時用背面圖、手臂隨寫字輕晃，黑板一行一行出現
