@@ -139,17 +139,20 @@ export class Garden3D{
  this.build();this.bindInput();
  new ResizeObserver(()=>this.resize()).observe(host);this.resize();
  this.last=performance.now();
- const loop=now=>{this.raf=requestAnimationFrame(loop);const dt=Math.min(.1,(now-this.last)/1000);this.last=now;if(!document.hidden)this.frame(now/1000,dt)};
+ // 自動降階：連續偏慢時依序降低解析度、關閉陰影與環境反射，讓舊手機與沒有顯示卡的電腦也跑得動
+ this.perf={n:0,sum:0,level:0};
+ const loop=now=>{this.raf=requestAnimationFrame(loop);const raw=(now-this.last)/1000,dt=Math.min(.1,raw);this.last=now;if(document.hidden)return;this.frame(now/1000,dt);
+ const q=this.perf;if(q.level<2&&raw<3){q.n++;q.sum+=raw;if(q.n>=(q.sum>1.2?5:24)){const avg=q.sum/q.n;q.n=0;q.sum=0;if(avg>.055){q.level=avg>.18?2:q.level+1;this.lowRes=true;this.resize();if(q.level===2){this.sun.castShadow=false;this.scene.environment=null;this.renderer.shadowMap.autoUpdate=false;this.renderer.toneMapping=THREE.NoToneMapping;this.scene.traverse(o=>{if(o.material)[].concat(o.material).forEach(m=>{m.needsUpdate=true})})}}}}};
  this.raf=requestAnimationFrame(loop);
  }
- resize(){const w=this.host.clientWidth||800,h=this.host.clientHeight||500;this.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,w<600?1.75:2));this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();this.w=w;this.h=h}
+ resize(){const w=this.host.clientWidth||800,h=this.host.clientHeight||500;this.renderer.setPixelRatio(this.lowRes?1:Math.min(window.devicePixelRatio||1,w<600?1.75:2));this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();this.w=w;this.h=h}
 
  // ── 場景建模 ──
  build(){
  const s=this.scene,rand=rng(20261114);
  s.add(new THREE.HemisphereLight('#fff3e2','#d9b5a8',.85));
  const sun=new THREE.DirectionalLight('#ffe6bd',2.5);sun.position.set(-18,30,16);sun.castShadow=true;sun.shadow.mapSize.set(this.opts.showcase?4096:2048,this.opts.showcase?4096:2048);sun.shadow.radius=3;
- Object.assign(sun.shadow.camera,{left:-32,right:32,top:26,bottom:-26,near:1,far:90});sun.shadow.bias=-.0006;sun.shadow.normalBias=.04;s.add(sun);
+ Object.assign(sun.shadow.camera,{left:-32,right:32,top:26,bottom:-26,near:1,far:90});sun.shadow.bias=-.0006;sun.shadow.normalBias=.04;s.add(sun);this.sun=sun;
  // 底座：圓角草地，側面是莓紫色，像桌上的小模型
  const shape=new THREE.Shape(),W=24.5,D=18.5,R=4;
  shape.moveTo(-W+R,-D);shape.lineTo(W-R,-D);shape.quadraticCurveTo(W,-D,W,-D+R);shape.lineTo(W,D-R);shape.quadraticCurveTo(W,D,W-R,D);shape.lineTo(-W+R,D);shape.quadraticCurveTo(-W,D,-W,D-R);shape.lineTo(-W,-D+R);shape.quadraticCurveTo(-W,-D,-W+R,-D);
