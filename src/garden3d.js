@@ -142,7 +142,7 @@ export class Garden3D{
  // 自動降階：連續偏慢時依序降低解析度、關閉陰影與環境反射，讓舊手機與沒有顯示卡的電腦也跑得動
  this.perf={n:0,sum:0,level:0};
  const loop=now=>{this.raf=requestAnimationFrame(loop);const raw=(now-this.last)/1000,dt=Math.min(.1,raw);this.last=now;if(document.hidden)return;this.frame(now/1000,dt);
- const q=this.perf;if(q.level<2&&raw<1){q.n++;q.sum+=raw;if(q.n>=24){const avg=q.sum/q.n;q.n=0;q.sum=0;if(avg>.055){q.level++;if(q.level===1){this.lowRes=true;this.resize()}else{this.sun.castShadow=false;this.scene.environment=null;this.renderer.shadowMap.autoUpdate=false;this.renderer.toneMapping=THREE.NoToneMapping;this.scene.traverse(o=>{if(o.material)[].concat(o.material).forEach(m=>{m.needsUpdate=true})})}}}}};
+ const q=this.perf;if(q.level<2&&raw<3){q.n++;q.sum+=raw;if(q.n>=(q.sum>1.2?5:24)){const avg=q.sum/q.n;q.n=0;q.sum=0;if(avg>.055){q.level=avg>.18?2:q.level+1;this.lowRes=true;this.resize();if(q.level===2){this.sun.castShadow=false;this.scene.environment=null;this.renderer.shadowMap.autoUpdate=false;this.renderer.toneMapping=THREE.NoToneMapping;this.scene.traverse(o=>{if(o.material)[].concat(o.material).forEach(m=>{m.needsUpdate=true})})}}}}};
  this.raf=requestAnimationFrame(loop);
  }
  resize(){const w=this.host.clientWidth||800,h=this.host.clientHeight||500;this.renderer.setPixelRatio(this.lowRes?1:Math.min(window.devicePixelRatio||1,w<600?1.75:2));this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();this.w=w;this.h=h}
