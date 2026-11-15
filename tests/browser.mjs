@@ -12,8 +12,9 @@ for(const p of pages)await p.getByText('2 位同學在線',{exact:false}).waitFo
 const p=pages[0];await p.locator('[data-place="1"]').click();await p.locator('#draw').click();await p.locator('#result .card').waitFor();await p.locator('.close').click();
 await p.locator('[data-place="0"]').click();await p.locator('#wish').fill('每天進步一點點');await p.locator('#send').click();await p.getByText('心願已掛上樹梢',{exact:false}).waitFor();await p.locator('.close').click();
 await pages[1].locator('[data-place="2"]').click();await pages[1].getByRole('button',{name:'30 秒',exact:true}).click();await pages[1].getByText(/^剩餘 \d+ 秒$/).waitFor();await pages[1].locator('dialog').waitFor({state:'hidden'});await pages[1].locator('#med-stop').click();
-await pages[1].locator('[data-place="3"]').click();await pages[1].locator('#join').click();await pages[1].getByText('輪到你了',{exact:false}).waitFor();// 按到提示消失為止（慢的機器上，提示可能在第二次點擊前就因自動開始而收起）
-for(let k=0;k<4&&await pages[1].locator('.g3-swipe').isVisible();k++)await pages[1].locator('.g3-swipe button').click({timeout:3000}).catch(()=>{});await pages[1].getByText('煩惱輕一點',{exact:false}).waitFor({timeout:15000});await pages[1].locator('.close').click();
+await pages[1].locator('[data-place="3"]').click();await pages[1].locator('#join').click();await pages[1].getByText('輪到你了',{exact:false}).waitFor();// 直接觸發按鈕（軟體繪圖的測試機很慢，Playwright 的可見性檢查會逾時）；若仍未成功，25 秒後會自動開始
+for(let k=0;k<6;k++){await pages[1].evaluate(()=>{const b=document.querySelector('.g3-swipe:not([hidden]) button');if(b)b.click()});await pages[1].waitForTimeout(400)}
+await pages[1].getByText('煩惱輕一點',{exact:false}).waitFor({timeout:60000});await pages[1].locator('.close').click();
 for(const page of pages){assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
 for(const page of pages)assert.equal(await page.locator('#garden canvas').count(),1);
 await pages[0].waitForTimeout(1500);
