@@ -2,7 +2,6 @@
 // 所有模型都由基本幾何體組成，沒有使用任何外部模型或他人素材。
 // 型別宣告在 garden3d.d.ts；本檔是純 JavaScript，方便在沒有建置工具時直接預覽。
 import * as THREE from './vendor/three.module.min.js';
-import {buildStudent,poseStudent} from './student3d.js';
 
 // ── 座標：資料庫沿用舊規則的範圍 (x 55–945, y 150–535)，在 3D 世界換算成 44 × 31 的地面 ──
 const toWorld=(x,y)=>[(x-500)*.05,(y-342.5)*.08];
@@ -70,9 +69,17 @@ function route(from,to){
  const out=[];let at=from,k=0;while(k<cells.length){let far=k;for(let m=cells.length-1;m>k;m--)if(lineFree(at,cells[m])){far=m;break}out.push(cells[far]);at=cells[far];k=far+1}
  return out.length?out:[to]}
 
-const STRIDE=.8,SPEED=3.9; // 一步的距離與走路速度（世界單位）；步伐由實際走過的距離推動，腳不會打滑
+// ── 人物分件：站姿圖沿褲腳切成上半身與左右腿，三片共用同一張貼圖，腿繞髖部擺動 ──
+// 數值是各站姿圖的比例座標（cut：褲腳高度；split：兩腿之間；l、r：左右腿的中心）
+const LEGS={'short-standing':{cut:.735,split:.528,l:.478,r:.59},'long-standing':{cut:.735,split:.455,l:.405,r:.515},'pony-standing':{cut:.799,split:.505,l:.377,r:.621}};
+// 造型代碼 → 立牌圖的名稱。human、bear 是最早的代碼；之後新增的造型直接用自己的名字（可帶 +g、+f 等旗標）
+const spriteBase=style=>{const b=String(style||'').split('+')[0];return b==='bear'?'long':b==='human'?'short':LEGS[b+'-standing']?b:'short'};
 // 走近就自動開啟的範圍：[景點編號, x, z, 半徑]（靜心亭另外處理）
 const AUTO=[[0,STAND[0][0],STAND[0][1],1.9],[1,STAND[1][0],STAND[1][1],1.9],[3,ALTAR.x,ALTAR.z,2.4]];
+const STRIDE=.8,SPEED=3.9; // 一步的距離與走路速度（世界單位）；步伐由實際走過的距離推動，腳不會打滑
+function partGeo(u0,u1,v0,v1,px,py){
+ const g=new THREE.PlaneGeometry(u1-u0,v1-v0);g.translate((u0+u1)/2-px,py-(v0+v1)/2,0);
+ g.setAttribute('uv',new THREE.Float32BufferAttribute([u0,1-v0,u1,1-v0,u0,1-v1,u1,1-v1],2));return g}
 
 // ── 小工具 ──
 function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
@@ -413,8 +420,16 @@ export class Garden3D{
  // ── 人物：面向鏡頭的立牌，胸口疊上原始校徽 ──
  actor(id){
  let a=this.actors.get(id);if(a)return a;
- if(!this.emblemMat){const e=new THREE.TextureLoader().load(this.opts.emblemUrl);e.colorSpace=THREE.SRGBColorSpace;e.anisotropy=8;this.emblemMat=new THREE.MeshBasicMaterial({map:e,transparent:true,alphaTest:.3})}
- const root=new THREE.Group();
+ const tl=new THREE.TextureLoader(),o=this.opts;
+ if(!this.tex){this.tex={};for(const k of Object.keys(o.anchors)){const t=tl.load(o.assetBase+'art/students/'+k+'.webp');t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;this.tex[k]=new THREE.MeshBasicMaterial({map:t,alphaTest:.5,side:THREE.DoubleSide})}
+ const e=tl.load(o.emblemUrl);e.colorSpace=THREE.SRGBColorSpace;e.anisotropy=8;this.emblemMat=new THREE.MeshBasicMaterial({map:e,transparent:true,alphaTest:.3});
+ this.unit=new THREE.PlaneGeometry(1,1);this.unit.translate(0,.5,0);this.unitC=new THREE.PlaneGeometry(1,1);
+ this.parts={};for(const [k,L] of Object.entries(LEGS))this.parts[k]={upper:partGeo(0,1,0,L.cut+.012,.5,1),legL:partGeo(0,L.split,L.cut-.02,1,L.l,L.cut+.01),legR:partGeo(L.split,1,L.cut-.02,1,L.r,L.cut+.01)}}
+ const root=new THREE.Group(),bill=new THREE.Group(),fig=new THREE.Group();
+ // rig 內的座標以「腳底中央」為原點、圖高為 1；body 是上半身（坐姿時是整張圖），兩條腿各自以髖部為支點
+ const rig=new THREE.Group(),body=new THREE.Mesh(this.unit,this.tex['short-standing']),legL=new THREE.Mesh(this.unit,this.tex['short-standing']),legR=new THREE.Mesh(this.unit,this.tex['short-standing']),emblem=new THREE.Mesh(this.unitC,this.emblemMat);emblem.renderOrder=2;
+ body.position.z=.004;rig.add(legL,legR,body);fig.add(rig,emblem);bill.add(fig);root.add(bill);
+ const shadow=put(root,new THREE.CircleGeometry(.5,20),new THREE.MeshBasicMaterial({color:'#3e352d',transparent:true,opacity:.2,depthWrite:false}),0,.03,0,{rx:-Math.PI/2,cast:false});
  const ring=put(root,new THREE.RingGeometry(.52,.62,28),new THREE.MeshBasicMaterial({color:'#fff',transparent:true,opacity:.95,depthWrite:false}),0,.04,0,{rx:-Math.PI/2,cast:false});
  const stars=[0,1,2,3,4,5,6,7].map(()=>put(root,new THREE.OctahedronGeometry(.13),mat(C.gold,{emissive:'#ffd66b',emissiveIntensity:1}),0,1,0,{cast:false}));
  // 聖光：從上方灑下的光柱與腳下的光暈，補運時才顯示
@@ -424,7 +439,7 @@ export class Garden3D{
  outer.position.y=inner.position.y=3.5;halo.rotation.x=-Math.PI/2;halo.position.y=.2;beam.add(outer,inner,halo);beam.userData={outer,inner,halo};
  const tag=document.createElement('div');tag.className='g3-tag';tag.innerHTML='<span class="g3-status" hidden></span><span class="g3-name"></span>';this.labels.append(tag);
  this.scene.add(root);
- a={root,beam,model:undefined,style:undefined,yaw:0,yawTo:0,phase:0,walk:0,ring,stars,tag,X:NaN,Z:0,y:0,h:2,seed:this.actors.size*1.7,name:'',status:''};this.actors.set(id,a);return a}
+ a={root,bill,fig,rig,beam,body,legL,legR,phase:0,walk:0,side:1,key:'',emblem,shadow,ring,stars,tag,X:NaN,Z:0,y:0,flip:1,movingUntil:0,seed:this.actors.size*1.7,name:'',status:''};this.actors.set(id,a);return a}
 
  frame(t,dt){
  const cam=this.cam,me=this.players[this.uid];
@@ -458,21 +473,27 @@ export class Garden3D{
  const gap=Math.hypot(tx-a.X,tz-a.Z);let nx=tx,nz=tz;
  if(!local&&gap>.05&&gap<12){const step=Math.min(gap,Math.max(gap*5,1.2)*dt);nx=a.X+(tx-a.X)/gap*step;nz=a.Z+(tz-a.Z)/gap*step}
  const dx=nx-a.X,dz=nz-a.Z;const moved=Math.hypot(dx,dz),speed=dt>0?moved/dt:0;
- if(moved>.0005){a.yawTo=Math.atan2(dx,dz);a.phase+=moved/STRIDE*Math.PI}
+ if(moved>.0005){const side=dx*camRight.x+dz*camRight.z;if(Math.abs(side)>moved*.25)a.flip=side<0?-1:1;a.side+=(Math.min(1,Math.abs(side)/moved)-a.side)*Math.min(1,dt*8);a.phase+=moved/STRIDE*Math.PI}
  a.walk+=((speed>.5?1:0)-a.walk)*Math.min(1,dt*(speed>.5?14:9));
  a.X=nx;a.Z=nz;
- const seated=p.state==='meditating';
- // 造型改變（或第一次出現）時重建公仔
- if(a.style!==p.style){if(a.model)a.root.remove(a.model);a.model=buildStudent(p.style,this.emblemMat);a.style=p.style;a.root.add(a.model)}
- const gy=groundY(nx,nz);a.y+=(gy-a.y)*Math.min(1,dt*14);
- const air=local?this.jump.y:0;
- a.root.position.set(nx,a.y+air,nz);
- // 面向行進方向；打坐與補運時面向南方（亭子與補運台的正面）
- if(seated||p.state==='blessing')a.yawTo=0;
- let turn=a.yawTo-a.yaw;turn=Math.atan2(Math.sin(turn),Math.cos(turn));a.yaw+=turn*Math.min(1,dt*12);a.model.rotation.y=a.yaw;
- poseStudent(a.model,{phase:a.phase,walk:a.walk,seated,t,air,seed:a.seed,still:this.reduceMotion});
- const h=(seated?a.model.userData.top-.36:a.model.userData.top)+.02;
- a.ring.position.y=.04-air;a.ring.scale.setScalar(seated?1.25:1);a.ring.material.color.set(p.color);
+ const seated=p.state==='meditating'||p.state==='resting',base=spriteBase(p.style);
+ // 沒有坐姿圖的造型：坐下時沿用站姿圖，收起雙腿、把上半身放到蒲團上
+ const tucked=seated&&!this.opts.anchors[base+'-seated'],key=base+'-'+(seated&&!tucked?'seated':'standing'),an=this.opts.anchors[key];
+ const full=(seated&&!tucked?1.45:1.95)*(an.scale||1),drop=tucked?(1-LEGS[key].cut)*full-.08:0,h=full-drop,w=full*an.width/an.height,lift=p.state==='resting'?.6:0;
+ const gy=groundY(nx,nz)+lift;a.y+=(gy-a.y)*Math.min(1,dt*14);
+ a.root.position.set(nx,a.y+(local?this.jump.y:0),nz);
+ a.bill.quaternion.copy(this.camera.quaternion);
+ // 立牌面向鏡頭時頭會往後仰，容易插進椅背或牆面；沿視線把立牌往鏡頭方向挪一點（畫面上的位置與大小幾乎不變），就不會被身後的東西切掉一半
+ const toCam=this.camera.position.clone().sub(a.root.position).normalize();a.bill.position.copy(toCam.multiplyScalar(h*Math.sin(cam.pitch)*.95));
+ if(a.key!==key){a.key=key;const P=this.parts[key];a.body.material=a.legL.material=a.legR.material=this.tex[key];
+ if(P){const L=LEGS[key];a.body.geometry=P.upper;a.body.position.set(0,0,.004);a.legL.geometry=P.legL;a.legL.position.set(L.l-.5,1-L.cut-.01,0);a.legR.geometry=P.legR;a.legR.position.set(L.r-.5,1-L.cut-.01,0)}else{a.body.geometry=this.unit;a.body.position.set(0,0,.004)}}
+ a.legL.visible=a.legR.visible=Boolean(this.parts[key])&&!tucked;a.rig.scale.set(w*a.flip,full,1);a.rig.position.y=-drop;
+ const es=w*an.size;a.emblem.scale.set(es,es,1);a.emblem.position.set((an.x-.5)*w*a.flip,(1-an.y)*full-drop,.02);
+ // 走路：兩腿交替。橫向移動時前後擺腿，朝鏡頭或遠離鏡頭時改為交替抬腳；身體每一步輕輕起伏。
+ const k=seated||this.reduceMotion?0:a.walk,sw=Math.sin(a.phase),swing=.5*a.side*k,raise=(.07+.11*(1-a.side))*k;
+ a.legL.rotation.z=sw*swing;a.legR.rotation.z=-sw*swing;a.legL.scale.y=1-Math.max(0,sw)*raise;a.legR.scale.y=1-Math.max(0,-sw)*raise;
+ a.fig.position.y=Math.abs(Math.cos(a.phase))*.035*k;a.fig.rotation.z=sw*.03*k*(1-a.side*.6);a.fig.scale.y=k>.05||this.reduceMotion?1:1+Math.sin(t*1.5+a.seed)*.012;
+ const air=local?this.jump.y:0;a.shadow.position.y=.03-air;a.ring.position.y=.04-air;a.shadow.scale.setScalar(seated?1.25:1);a.ring.scale.setScalar(seated?1.25:1);a.ring.material.color.set(p.color);
  const bless=p.state==='blessing';a.beam.visible=bless;
  if(bless){const pulse=this.reduceMotion?1:.85+Math.sin(t*3)*.15,u=a.beam.userData;u.outer.material.opacity=.1*pulse;u.inner.material.opacity=.13*pulse;u.halo.material.opacity=.32*pulse;u.outer.rotation.y=t*.4;u.halo.scale.setScalar(1+Math.sin(t*2)*.06)}
  // 星星沿螺旋緩緩上升並閃爍
