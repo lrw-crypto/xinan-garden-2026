@@ -13,16 +13,16 @@ const PAV={x:0,z:-9};            // 靜心亭
 const POND={x:4.5,z:3.2,rx:5.6,rz:3.7,bridge:4.9}; // 錦鯉池與拱橋（橋沿南北向）
 const TREE={x:-14,z:-6};         // 祈福樹
 const EMA={x:-9.2,z:-3.2};       // 繪馬架
-const FORTUNE={x:12.5,z:-10};    // 求籤屋
+const FORTUNE={x:-17,z:3.2};     // 求籤屋：在祈福樹前方（南側），門朝東，和靜心亭、數學上神圍成三合院
 const HUT={x:17,z:4.2};          // 補運光苗的根部；莖向西彎，花苞垂在補運台正上方
 const ALTAR={x:13.3,z:4.2};     // 補運台：在光苗花苞的正下方
 const CUSHIONS=[[-1.2,-8],[1.2,-8],[-1.2,-10.2],[1.2,-10.2]];
 
 // 站位（世界座標）：人物走到這裡就會開啟互動
-const SAGE={x:-13.5,z:9.6};      // 數學上神與黑板（黑板面向南方）
-const STAND=[[-11.2,-1.2],[12.5,-6.6],[0,-4.2],[13.3,6.3],[SAGE.x+1.8,SAGE.z+4]];
+const SAGE={x:12.5,z:-10.4};      // 數學上神與黑板（黑板面向南方）
+const STAND=[[-11.2,-1.2],[FORTUNE.x+4.6,FORTUNE.z],[0,-4.2],[13.3,6.3],[SAGE.x+1.8,SAGE.z+4.2]];
 const NAMES=['心願祈福樹','暖心求籤','靜心亭子','補運光苗','數學上神'];
-const TAG_AT=[[-11.5,5.2,-4.5],[12.5,5.6,-10],[0,7.4,-9],[15.6,9.6,4.2],[SAGE.x,4.9,SAGE.z-.6]];
+const TAG_AT=[[-11.5,5.2,-4.5],[FORTUNE.x,5.8,FORTUNE.z],[0,7.4,-9],[15.6,9.6,4.2],[SAGE.x,4.9,SAGE.z-.6]];
 export const spots=NAMES.map((name,i)=>({name,...toDb(STAND[i][0],STAND[i][1])}));
 export const places={
  spawn:toDb(0,10),
@@ -142,7 +142,7 @@ export class Garden3D{
  const stones=[];const line=(a,b,gap=1.25)=>{const d=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.max(1,Math.round(d/gap));for(let i=0;i<=n;i++){const X=a[0]+(b[0]-a[0])*i/n,Z=a[1]+(b[1]-a[1])*i/n;if(!blocked(X,Z)||Math.abs(X-POND.x)<1.2)stones.push([X+(rand()-.5)*.35,Z+(rand()-.5)*.35])}};
  // 廣場與通往各處的石板路
  for(let a=0;a<3;a++)for(let i=0;i<10+a*7;i++){const t=i/(10+a*7)*Math.PI*2,r=1.1+a*1.15;stones.push([Math.cos(t)*r*1.25,8.6+Math.sin(t)*r*.8])}
- line([0,15],[0,10.6]);line([-1.4,7],[-3,-2.2]);line([-3,-2.2],[0,-4.4]);line([-3.4,-2],[-10.6,-1.2]);line([2.6,8.8],[4.5,8.6]);line([-2.8,9.2],[-12.6,12.4]);line([4.5,-2.3],[2,-4.4]);line([4.5,-2.3],[11.6,-6.2]);line([6,8.9],[13.6,5.4]);line([12.6,-5.6],[14.2,3.4]);
+ line([0,15],[0,10.6]);line([-1.4,7],[-3,-2.2]);line([-3,-2.2],[0,-4.4]);line([-3.4,-2],[-10.6,-1.2]);line([2.6,8.8],[4.5,8.6]);line([-10.6,-1.2],[-12.2,3.2]);line([11.6,-6.2],[14,-6.4]);line([4.5,-2.3],[2,-4.4]);line([4.5,-2.3],[11.6,-6.2]);line([6,8.9],[13.6,5.4]);line([12.6,-5.6],[14.2,3.4]);
  const geo=cyl(.52,.56,.12,10),m1=new THREE.InstancedMesh(geo,mat(C.stone),stones.length),m2=new THREE.InstancedMesh(geo,mat(C.stone2),stones.length);
  const d=new THREE.Object3D();let a=0,b=0;
  for(const [X,Z] of stones){if(Math.abs(X-POND.x)<1.2&&Math.abs(Z-POND.z)<POND.bridge)continue;d.position.set(X,groundY(X,Z)+.05,Z);d.rotation.y=rand()*3;const k=.8+rand()*.5;d.scale.set(k,1,k*(.8+rand()*.3));d.updateMatrix();if(rand()<.72)m1.setMatrixAt(a++,d.matrix);else m2.setMatrixAt(b++,d.matrix)}
@@ -275,7 +275,7 @@ export class Garden3D{
  const s=put(g,new THREE.CircleGeometry(.48,24),new THREE.MeshBasicMaterial({map:signTexture(sign,'#fff8ec',color)}),0,h+.75,d/2+.62,{cast:false});s.renderOrder=1;
  return g}
  buildFortune(){
- const g=this.house(FORTUNE.x,FORTUNE.z,0,5,3.4,2.6,'籤','#e8553f'),d=1.7;
+ const g=this.house(FORTUNE.x,FORTUNE.z,Math.PI/2,5,3.4,2.6,'籤','#e8553f'),d=1.7;
  put(g,box(3.4,1.5,.3),mat('#7a4b3a'),0,1.75,d-.1,{cast:false});put(g,box(3.8,.24,1),mat(C.wood),0,1,d+.3);put(g,box(3.6,.7,.5),mat(C.woodDark),0,.62,d+.2);
  put(g,cyl(.3,.26,.6,12),mat('#c9764d'),-.6,1.42,d+.35);for(let i=0;i<5;i++)put(g,box(.05,.6,.05),mat('#f6e2b0'),-.75+i*.075,1.85,d+.3+(i%2)*.08,{rz:(i-2)*.09});
  put(g,cyl(.22,.22,.1,12),mat(C.pink2),.6,1.17,d+.35);put(g,ball(.16,1),mat(C.pink3),.6,1.3,d+.35);
@@ -346,7 +346,7 @@ export class Garden3D{
  }
  buildNature(rand){
  const s=this.scene;
- const trees=[[-19.5,-13.5,1.25],[-7,-14,1.1],[7.5,-14.2,1],[19.5,-13.5,1.3],[-20,2,1.15],[-19.5,13,1.3],[-15.2,6.4,1.05],[-9.5,14,1],[11,14,1.05],[19.8,13,1.25],[20,-3,1.1],[19.6,9.4,.95],[-5.5,-7.5,.9],[6.2,-6.4,.85],[-18.5,-6.5,.9]];
+ const trees=[[-19.5,-13.5,1.25],[-7,-14,1.1],[7.5,-14.2,1],[19.5,-13.5,1.3],[-13,10,1.1],[-19.5,13,1.3],[-6.8,6.4,.9],[-9.5,14,1],[11,14,1.05],[19.8,13,1.25],[20,-3,1.1],[19.6,9.4,.95],[-5.5,-7.5,.9],[6.2,-6.4,.85],[-18.5,-6.5,.9]];
  // 青松與梅樹交錯種植：輕鬆、沒事
  trees.forEach(([x,z,k],i)=>{if(i%2)this.plumTree(x,z,k*1.15,rand,false);else this.pineTree(x,z,k,rand);SOLIDS.push([x,z,.55])});
  // 梅花（三種紅粉白）與松針雲片（三種綠）各用一個實例化網格畫完

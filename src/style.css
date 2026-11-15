@@ -156,3 +156,5 @@ label.check input{width:18px;height:18px}
 .card.sage-warm{background:#fff7e6;border:1px solid #f0d9a8}.card.sage-firm{background:#eef3f8;border:1px solid #c5d3e2}.card.sage-shock{background:#fff0f0;border:1px solid #f1c3c3}
 .card[class*=sage-]{font-size:16px;line-height:1.9;padding:16px 18px}
 #ask{width:100%}
+
+#wish-msg.care{font-size:18px;font-weight:700;text-align:center;padding:18px 14px}

@@ -6,7 +6,7 @@ const ok=['每天進步一點點','希望統測順利，全班一起加油','我
 const bad=['幹你','幹 你 娘','f.u.c.k','他是白痴','去死','討厭數學老師','我想放棄了','希望他落榜','我喜歡你','想跟小美在一起','告白成功','520','愛你喔 ❤','0912345678','我的 LINE 是 abc','ig: happy_day','test@mail.com','http://example.com','三年二班 15 號','住在中正路 100 號','我叫王小明','生日 5 月 20 日','<b>嗨</b>'];
 test('ordinary encouraging wishes pass',()=>{for(const t of ok)assert.equal(checkWish(t).ok,true,t)});
 test('rude, hostile, romantic and personal-data wishes are refused',()=>{for(const t of bad)assert.equal(checkWish(t).ok,false,t)});
-test('distress is refused with a caring message',()=>{const r=checkWish('我不想活了');assert.equal(r.ok,false);assert.equal(r.care,true);assert.match(r.reason,/1925/)});
+test('distress is refused with a caring message',()=>{const r=checkWish('我不想活了');assert.equal(r.ok,false);assert.equal(r.care,true);assert.equal(r.reason,'請找輔導老師聊聊，好嗎？')});
 test('empty and over-long text is refused',()=>{assert.equal(checkWish('  ').ok,false);assert.equal(checkWish('好'.repeat(121)).ok,false)});
 test('venting to the sage is allowed, but rude words and personal data are not',()=>{assert.equal(checkWish('數學考差了，好想放棄',{vent:true}).ok,true);assert.equal(checkWish('他是白痴',{vent:true}).ok,false);assert.equal(checkWish('我的電話0912345678',{vent:true}).ok,false);assert.equal(checkWish('好'.repeat(101),{vent:true}).ok,false);assert.equal(checkWish('我不想活了',{vent:true}).care,true)});
 test('the sage picks a tone from the wording and always answers 雖然…但…',()=>{assert.equal(sageReply('明天考數學我完全沒讀').tone,'驚恐');assert.equal(sageReply('我一直滑手機停不下來').tone,'嚴肅');assert.equal(sageReply('壓力好大睡不著').tone,'安慰');for(const t of ['模擬考考差了','不知道未來要讀什麼科系','嗯'])assert.match(sageReply(t).reply,/^雖然.+，但.+/)});
