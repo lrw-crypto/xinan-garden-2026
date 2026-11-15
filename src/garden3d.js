@@ -19,9 +19,10 @@ const ALTAR={x:13.3,z:4.2};     // 補運台：在光苗花苞的正下方
 const CUSHIONS=[[-1.2,-8],[1.2,-8],[-1.2,-10.2],[1.2,-10.2]];
 
 // 站位（世界座標）：人物走到這裡就會開啟互動
-const STAND=[[-11.2,-1.2],[12.5,-6.6],[0,-4.2],[13.3,6.3]];
-const NAMES=['心願祈福樹','暖心求籤','靜心亭子','補運光苗'];
-const TAG_AT=[[-11.5,5.2,-4.5],[12.5,5.6,-10],[0,7.4,-9],[15.6,9.6,4.2]];
+const SAGE={x:-13.5,z:9.6};      // 數學上神與黑板（黑板面向南方）
+const STAND=[[-11.2,-1.2],[12.5,-6.6],[0,-4.2],[13.3,6.3],[SAGE.x+1.8,SAGE.z+4]];
+const NAMES=['心願祈福樹','暖心求籤','靜心亭子','補運光苗','數學上神'];
+const TAG_AT=[[-11.5,5.2,-4.5],[12.5,5.6,-10],[0,7.4,-9],[15.6,9.6,4.2],[SAGE.x,4.9,SAGE.z-.6]];
 export const spots=NAMES.map((name,i)=>({name,...toDb(STAND[i][0],STAND[i][1])}));
 export const places={
  spawn:toDb(0,10),
@@ -74,7 +75,7 @@ function route(from,to){
 // 造型代碼 → 人物圖的名稱。human、bear 是最早的代碼（戴眼鏡的短髮、長髮）；+g 表示戴眼鏡
 function figureKey(style,figures){let v=String(style||'');if(v==='human')v='short';if(v==='bear')v='long+g';const [b,...f]=v.split('+');const k=b==='long'&&f.includes('g')?'longg':b;return figures.styles[k]?k:'short'}
 // 走近就自動開啟的範圍：[景點編號, x, z, 半徑]（靜心亭另外處理）
-const AUTO=[[0,STAND[0][0],STAND[0][1],1.9],[1,STAND[1][0],STAND[1][1],1.9],[3,ALTAR.x,ALTAR.z,2.4]];
+const AUTO=[[0,STAND[0][0],STAND[0][1],1.9],[1,STAND[1][0],STAND[1][1],1.9],[3,ALTAR.x,ALTAR.z,2.4],[4,STAND[4][0],STAND[4][1],1.7]];
 const STRIDE=.8,SPEED=3.9; // 一步的距離與走路速度（世界單位）；步伐由實際走過的距離推動，腳不會打滑
 function partGeo(u0,u1,v0,v1,px,py){
  const g=new THREE.PlaneGeometry(u1-u0,v1-v0);g.translate((u0+u1)/2-px,py-(v0+v1)/2,0);
@@ -135,13 +136,13 @@ export class Garden3D{
  this.ground=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshBasicMaterial({visible:false}));this.ground.rotation.x=-Math.PI/2;s.add(this.ground);
  // 草地色塊
  for(let i=0;i<26;i++)put(s,cyl(1,1,.04,24),mat(i%2?C.grass2:'#b4dfa8'),(rand()-.5)*44,.01,(rand()-.5)*32,{s:[1.5+rand()*2.5,1,1+rand()*2],cast:false});
- this.buildPaths(rand);this.buildPond(rand);this.buildPavilion();this.buildWishTree(rand);this.buildEma();this.buildFortune();this.buildHut();this.buildGate();this.buildWalls();this.buildNature(rand);this.buildPetals(rand);
+ this.buildPaths(rand);this.buildPond(rand);this.buildPavilion();this.buildWishTree(rand);this.buildEma();this.buildFortune();this.buildHut();this.buildSage();this.buildGate();this.buildWalls();this.buildNature(rand);this.buildPetals(rand);
  }
  buildPaths(rand){
  const stones=[];const line=(a,b,gap=1.25)=>{const d=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.max(1,Math.round(d/gap));for(let i=0;i<=n;i++){const X=a[0]+(b[0]-a[0])*i/n,Z=a[1]+(b[1]-a[1])*i/n;if(!blocked(X,Z)||Math.abs(X-POND.x)<1.2)stones.push([X+(rand()-.5)*.35,Z+(rand()-.5)*.35])}};
  // 廣場與通往各處的石板路
  for(let a=0;a<3;a++)for(let i=0;i<10+a*7;i++){const t=i/(10+a*7)*Math.PI*2,r=1.1+a*1.15;stones.push([Math.cos(t)*r*1.25,8.6+Math.sin(t)*r*.8])}
- line([0,15],[0,10.6]);line([-1.4,7],[-3,-2.2]);line([-3,-2.2],[0,-4.4]);line([-3.4,-2],[-10.6,-1.2]);line([2.6,8.8],[4.5,8.6]);line([4.5,-2.3],[2,-4.4]);line([4.5,-2.3],[11.6,-6.2]);line([6,8.9],[13.6,5.4]);line([12.6,-5.6],[14.2,3.4]);
+ line([0,15],[0,10.6]);line([-1.4,7],[-3,-2.2]);line([-3,-2.2],[0,-4.4]);line([-3.4,-2],[-10.6,-1.2]);line([2.6,8.8],[4.5,8.6]);line([-2.8,9.2],[-12.6,12.4]);line([4.5,-2.3],[2,-4.4]);line([4.5,-2.3],[11.6,-6.2]);line([6,8.9],[13.6,5.4]);line([12.6,-5.6],[14.2,3.4]);
  const geo=cyl(.52,.56,.12,10),m1=new THREE.InstancedMesh(geo,mat(C.stone),stones.length),m2=new THREE.InstancedMesh(geo,mat(C.stone2),stones.length);
  const d=new THREE.Object3D();let a=0,b=0;
  for(const [X,Z] of stones){if(Math.abs(X-POND.x)<1.2&&Math.abs(Z-POND.z)<POND.bridge)continue;d.position.set(X,groundY(X,Z)+.05,Z);d.rotation.y=rand()*3;const k=.8+rand()*.5;d.scale.set(k,1,k*(.8+rand()*.3));d.updateMatrix();if(rand()<.72)m1.setMatrixAt(a++,d.matrix);else m2.setMatrixAt(b++,d.matrix)}
@@ -301,6 +302,33 @@ export class Garden3D{
  put(this.scene,cyl(1.25,1.35,.14,28),mat('#fff1c9'),ALTAR.x,.07,ALTAR.z,{cast:false});put(this.scene,cyl(.95,.95,.16,28),mat('#ffe08a',{emissive:'#ffd466',emissiveIntensity:.45}),ALTAR.x,.08,ALTAR.z,{cast:false});
  for(let i=0;i<8;i++){const a=i/8*Math.PI*2;put(this.scene,new THREE.OctahedronGeometry(.09),mat(C.gold,{emissive:'#ffd66b',emissiveIntensity:.7}),ALTAR.x+Math.cos(a)*1.12,.2,ALTAR.z+Math.sin(a)*1.12,{cast:false})}
  }
+ // 數學上神解惑區：木架黑板，上神站在黑板前。黑板的字畫在畫布貼圖上，寫字時一行一行出現。
+ buildSage(){
+ const g=new THREE.Group();g.position.set(SAGE.x,0,SAGE.z);this.scene.add(g);SOLIDS.push([SAGE.x-1.6,SAGE.z-.6,1.1],[SAGE.x+1.6,SAGE.z-.6,1.1],[SAGE.x,SAGE.z+1.3,.8]);
+ put(g,box(5.4,3.1,.2),mat(C.woodDark),0,2.55,-.7);
+ const cv=document.createElement('canvas');cv.width=1024;cv.height=560;const tex=new THREE.CanvasTexture(cv);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=8;
+ put(g,new THREE.PlaneGeometry(5,2.72),new THREE.MeshBasicMaterial({map:tex}),0,2.55,-.59,{cast:false});
+ put(g,box(5.4,.12,.3),mat(C.wood),0,1.05,-.55);put(g,box(.5,.07,.1),mat(C.white),-1.6,1.14,-.5,{cast:false});put(g,box(.3,.07,.1),mat('#f9a8c4'),-.9,1.14,-.5,{cast:false});
+ for(const sx of [-1,1]){put(g,box(.2,4.2,.2),mat(C.woodDark),sx*2.6,2.1,-.7);put(g,box(.3,.16,1.3),mat(C.woodDark),sx*2.6,.08,-.7)}
+ put(g,cyl(1.5,1.6,.14,28),mat('#fff1c9'),0,.07,1.3,{cast:false});
+ const tl=new THREE.TextureLoader(),load=n=>{const t=tl.load(this.opts.assetBase+'art/sage-'+n+'.webp');t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return new THREE.MeshBasicMaterial({map:t,alphaTest:.5,side:THREE.DoubleSide})};
+ const unit=new THREE.PlaneGeometry(1,1);unit.translate(0,.5,0);
+ const bill=new THREE.Group(),fig=new THREE.Mesh(unit,load('front'));bill.position.set(0,.14,1.5);bill.add(fig);g.add(bill);
+ this.sage={g,bill,fig,front:fig.material,back:load('back'),cv,tex,lines:[],start:0,ms:0,writing:false,shown:-1};
+ this.drawBoard(0);
+ }
+ drawBoard(n){
+ const {cv,tex,lines}=this.sage,x=cv.getContext('2d');x.fillStyle='#2f5d4a';x.fillRect(0,0,1024,560);x.strokeStyle='#ffffff18';x.lineWidth=2;x.strokeRect(14,14,996,532);
+ x.fillStyle='#f4f7ee';x.textBaseline='top';
+ if(!lines.length){x.font='bold 64px "Noto Sans TC",sans-serif';x.textAlign='center';x.fillText('數學上神解惑',512,150);x.font='40px "Noto Sans TC",sans-serif';x.fillStyle='#ffe9a8';x.fillText('心裡有題解不開？說給上神聽',512,270);x.fillStyle='#cfe5d6';x.font='32px sans-serif';x.fillText('y = 努力 · x + 希望',512,370)}
+ else{x.textAlign='left';x.font='44px "Noto Sans TC",sans-serif';lines.slice(0,n).forEach((l,i)=>{x.fillStyle=i===lines.length-1?'#ffe9a8':'#f4f7ee';x.fillText(l,70,44+i*82)})}
+ tex.needsUpdate=true}
+ /** 上神轉身在黑板上寫字 ms 毫秒，寫完轉回來；回傳 Promise。 */
+ sageWrite(lines,ms){
+ if(!this.ok)return new Promise(r=>setTimeout(r,ms));
+ const s=this.sage;s.lines=lines;s.start=performance.now();s.ms=ms;s.writing=true;s.shown=-1;s.fig.material=s.back;this.drawBoard(0);
+ this.cam.follow=false;this.cam.t.set(SAGE.x,1.4,SAGE.z);
+ return new Promise(done=>{s.done=done})}
  buildGate(){
  const g=new THREE.Group();g.position.set(0,0,16.6);this.scene.add(g);this.gate=g;
  for(const sx of [-1,1]){put(g,cyl(.3,.32,4,12),mat(C.column),sx*2.6,2,0);put(g,box(.9,.4,.9),mat('#efe3d2'),sx*2.6,.2,0);this.lantern(g,sx*1.8,3,.1)}
@@ -336,7 +364,7 @@ export class Garden3D{
  for(let i=0;i<46;i++){const x=(rand()-.5)*42,z=(rand()-.5)*30;if(blocked(x,z)||Math.hypot(x,z-8.6)<5||Math.abs(x)<2.2)continue;
  if(i%3===0){put(s,ball(.55+rand()*.3,1),mat(i%2?C.leaf:C.leaf2),x,.3,z,{s:[1.2,.75,1.1]});for(let k=0;k<4;k++)put(s,ball(.11,0),mat([C.pink3,'#fff3d6','#c9b3ee'][k%3]),x+(rand()-.5)*.9,.62+rand()*.15,z+(rand()-.5)*.8,{cast:false})}
  else for(let k=0;k<5;k++)put(s,new THREE.ConeGeometry(.07,.5+rand()*.3,4),mat(C.leaf),x+(rand()-.5)*.5,.25,z+(rand()-.5)*.5,{rz:(rand()-.5)*.5,cast:false})}
- for(const [x,z] of [[-2.4,12.6],[2.4,12.6],[-4.2,-3.8],[4.2,-3.8],[-7.6,9.2],[11.2,7.2],[9.4,-5.4],[-8,-.2],[15.2,1.2],[-15.5,10.6]])this.stoneLamp(x,z);
+ for(const [x,z] of [[-2.4,12.6],[2.4,12.6],[-4.2,-3.8],[4.2,-3.8],[-7.6,9.2],[11.2,7.2],[9.4,-5.4],[-8,-.2],[15.2,1.2],[-17.4,11.6]])this.stoneLamp(x,z);
  }
  buildPetals(rand){
  const n=this.reduceMotion?0:110,geo=new THREE.CircleGeometry(.11,5);this.petals=new THREE.InstancedMesh(geo,new THREE.MeshBasicMaterial({color:'#ffc4da',side:THREE.DoubleSide}),Math.max(n,1));this.petals.count=n;this.petals.frustumCulled=false;this.scene.add(this.petals);
@@ -520,6 +548,12 @@ export class Garden3D{
  const cpos=this.camera.position;this.walls.n.visible=cpos.z>-16;this.walls.s.visible=cpos.z<16;this.walls.w.visible=cpos.x>-22;this.walls.e.visible=cpos.x<22;
  // 自己走進或靠近靜心亭時，屋頂變透明，才看得到亭子裡的人
  const underRoof=mine&&Math.hypot(mine.X-PAV.x,mine.Z-PAV.z)<5.2?.18:1;if(Math.abs(underRoof-this.roofOpacity)>.01){this.roofOpacity+=(underRoof-this.roofOpacity)*Math.min(1,dt*6);for(const m of this.pavRoof){m.opacity=this.roofOpacity;m.depthWrite=this.roofOpacity>.9}}
+ // 數學上神：面向鏡頭的立牌；寫字時用背面圖、手臂隨寫字輕晃，黑板一行一行出現
+ {const s=this.sage,W=s.writing?499/1257:602/1264,H=2.9;s.bill.quaternion.copy(this.camera.quaternion);s.fig.scale.set(H*W,H,1);
+ if(s.writing){const k=(performance.now()-s.start)/s.ms,n=Math.min(s.lines.length,Math.floor(k*(s.lines.length+.5)));if(n!==s.shown){s.shown=n;this.drawBoard(n)}
+ s.fig.rotation.z=this.reduceMotion?0:Math.sin(t*14)*.025;s.fig.position.x=this.reduceMotion?0:Math.sin(t*2.2)*.35;
+ if(k>=1){s.writing=false;s.fig.material=s.front;s.fig.rotation.z=0;s.fig.position.x=0;this.cam.follow=true;const d=s.done;s.done=undefined;if(d)d()}}
+ else s.fig.position.y=this.reduceMotion?0:Math.sin(t*1.6)*.02}
  // 場景動態
  for(const sw of this.swayers)sw.o.rotation.z=this.reduceMotion?0:Math.sin(t*sw.sp+sw.ph)*sw.amp;
  this.animated=this.animated.filter(fn=>fn(t)!==false);
@@ -531,7 +565,7 @@ export class Garden3D{
  updateLabels(mine){
  const v=new THREE.Vector3(),place=(el,x,y,z)=>{v.set(x,y,z).project(this.camera);const show=v.z<1&&Math.abs(v.x)<1.15&&Math.abs(v.y)<1.2;el.style.display=show?'':'none';if(show)el.style.transform='translate(-50%,-100%) translate('+((v.x+1)/2*this.w).toFixed(1)+'px,'+((1-v.y)/2*this.h).toFixed(1)+'px)'};
  for(const a of this.actors.values())place(a.tag,a.root.position.x,a.root.position.y+a.h+.25,a.root.position.z);
- if(!this.spotTags){this.spotTags=NAMES.map((n,i)=>{const b=document.createElement('button');b.type='button';b.className='g3-spot';b.dataset.spot=String(i);b.textContent=['🌸','🎋','🌿','✨'][i]+' '+n;this.labels.append(b);return b})}
+ if(!this.spotTags){this.spotTags=NAMES.map((n,i)=>{const b=document.createElement('button');b.type='button';b.className='g3-spot';b.dataset.spot=String(i);b.textContent=['🌸','🎋','🌿','✨','📐'][i]+' '+n;this.labels.append(b);return b})}
  this.spotTags.forEach((b,i)=>place(b,TAG_AT[i][0],TAG_AT[i][1],TAG_AT[i][2]));
  let near=-1;const busy=this.players[this.uid]?.state;if(mine&&busy!=='blessing'&&busy!=='queue'){let best=2.6;const check=(X,Z,i)=>{const d=Math.hypot(mine.X-X,mine.Z-Z);if(d<best){best=d;near=i}};STAND.forEach(([X,Z],i)=>check(X,Z,i))}
  if(near!==this.near){this.near=near;this.prompt.hidden=near<0;if(near>=0)this.prompt.textContent='進入 '+NAMES[near]+(matchMedia('(pointer: coarse)').matches?'':'（E）')}

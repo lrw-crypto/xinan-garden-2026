@@ -6,7 +6,8 @@ import {auth,database} from './firebase';
 import {Garden3D,spots,places,type Player} from './garden3d.js';
 import {fortunes} from './fortunes';
 import {checkWish} from './moderation.js';
-document.querySelector('#app')!.innerHTML=`<header><div class="brand"><img class="brand-emblem" src="${schoolEmblemUrl}" alt="草商校徽"><div><h1>草商輔導寺</h1><small>有心誠則靈，努力自有光。</small></div></div><div id="status">尚未進入庭院</div></header><main><div class="intro"><div><div class="eyebrow">CAOSHANG · A GARDEN FOR YOUR HEART</div><h2>青松伴梅樹——輕鬆，沒事。<span>花開有時，心安有處。</span></h2></div><p class="muted">穿過花影與古亭，<br>為今天的自己留一份溫柔。</p></div><div id="garden"></div><div class="places">${spots.map((s,i)=>`<button data-place="${i}">${['🌸','🎋','🌿','✨'][i]} ${s.name}<span>${['留下一個小小願望','領取今天的鼓勵','跟著呼吸慢下來','為勇氣充充電'][i]}</span></button>`).join('')}<figure class="qr"><img src="${import.meta.env.BASE_URL}art/qr.svg" alt="掃描進入輔導寺的 QR Code" width="180" height="180"><figcaption>掃描進入輔導寺</figcaption></figure></div><p id="notice" role="status"></p></main><footer>不必急著成為誰，今天也請好好照顧自己。<br>匿名陪伴・沒有自由聊天・請勿填寫個人資料</footer><dialog id="modal"></dialog>`;
+import {sageReply} from './sage.js';
+document.querySelector('#app')!.innerHTML=`<header><div class="brand"><img class="brand-emblem" src="${schoolEmblemUrl}" alt="草商校徽"><div><h1>草商輔導寺</h1><small>有心誠則靈，努力自有光。</small></div></div><div id="status">尚未進入庭院</div></header><main><div class="intro"><div><div class="eyebrow">CAOSHANG · A GARDEN FOR YOUR HEART</div><h2>青松伴梅樹——輕鬆，沒事。<span>花開有時，心安有處。</span></h2></div><p class="muted">穿過花影與古亭，<br>為今天的自己留一份溫柔。</p></div><div id="garden"></div><div class="places">${spots.map((s,i)=>`<button data-place="${i}">${['🌸','🎋','🌿','✨','📐'][i]} ${s.name}<span>${['留下一個小小願望','領取今天的鼓勵','跟著呼吸慢下來','為勇氣充充電','說出煩惱，算算陰影面積'][i]}</span></button>`).join('')}<figure class="qr"><img src="${import.meta.env.BASE_URL}art/qr.svg" alt="掃描進入輔導寺的 QR Code" width="180" height="180"><figcaption>掃描進入輔導寺</figcaption></figure></div><p id="notice" role="status"></p></main><footer>不必急著成為誰，今天也請好好照顧自己。<br>匿名陪伴・沒有自由聊天・請勿填寫個人資料</footer><dialog id="modal"></dialog>`;
 const $=(s:string)=>document.querySelector(s) as HTMLElement;
 const modal=$('#modal') as HTMLDialogElement;
 const scene=new Garden3D($('#garden'),{assetBase:import.meta.env.BASE_URL,emblemUrl:schoolEmblemUrl,figures});
@@ -41,7 +42,7 @@ let cheerTimer:ReturnType<typeof setTimeout>|undefined;
 scene.cheer=(_to,emoji)=>{if(!uid||!connected)return;safe(async()=>{const mine=ref(database,'players/'+uid);
 await update(mine,{emoji});
 clearTimeout(cheerTimer);cheerTimer=setTimeout(()=>safe(()=>update(mine,{emoji:null})),5000)})};document.querySelectorAll('[data-place]').forEach(b=>b.addEventListener('click',()=>openPlace(Number((b as HTMLElement).dataset.place))));
-function openPlace(i:number){if(!uid){tell('請先完成匿名登入。');return}if(!connected){tell('等待重新連線後再試一次。');return}if(i===0)wish();if(i===1)fortune();if(i===2)meditate();if(i===3)blessing()}
+function openPlace(i:number){if(!uid){tell('請先完成匿名登入。');return}if(!connected){tell('等待重新連線後再試一次。');return}if(i===0)wish();if(i===1)fortune();if(i===2)meditate();if(i===3)blessing();if(i===4)sage()}
 // 公開心願只保留到當天：台灣時間凌晨 0 點以前寫的一律不顯示，並從資料庫刪除。
 // 沒有後端排程，所以由午夜後第一個開著或打開網站的人代為清除；規則只允許刪除「今天 0 點以前」的公開心願。
 const taipeiMidnight=()=>{const now=Date.now();return now-((now+28800000)%86400000)};
@@ -62,6 +63,13 @@ function stopMeditation(){if(breathTimer){clearInterval(breathTimer);breathTimer
 function finishMeditation(message:string){stopMeditation();if(me?.state==='meditating'){state('walking');scene.walkOut(2)}tell(message)}
 $('#med-stop').addEventListener('click',()=>finishMeditation('已結束靜心，慢慢走出亭子。'));
 function meditate(){if(me?.state==='meditating'&&!medPanel.hidden)return;const c=scene.findSeat();if(!c){scene.toast('現在蒲團滿位，請排隊稍等。');return}stopMeditation();place(c.x,c.y);state('meditating');show('<h2>🌿 靜心修行</h2><p>吸氣四秒、吐氣四秒。選好時間後會回到庭院開始打坐，隨時可以按「結束」。</p><div class="actions">'+[30,60,180].map(n=>'<button data-time="'+n+'">'+(n<60?n+' 秒':n/60+' 分鐘')+'</button>').join('')+'</div>');modal.querySelectorAll('[data-time]').forEach(b=>b.addEventListener('click',()=>{let remaining=Number((b as HTMLElement).dataset.time);modal.close();medPanel.hidden=false;$('#clock').textContent='剩餘 '+remaining+' 秒';breathTimer=setInterval(()=>{remaining--;if(remaining>0)$('#clock').textContent='剩餘 '+remaining+' 秒';else finishMeditation('🌿 時間到了。謝謝你，給自己這段安靜的時間。')},1000)}))}
+// 數學上神：留言不寫入資料庫，只在自己的瀏覽器處理
+let sageBusy=false;
+function sage(){if(sageBusy)return;show('<h2>📐 數學上神解惑</h2><p>把卡住你的事說給上神聽（100 字以內）。留言只有你自己看得到，不會被儲存。</p><textarea id="ask" maxlength="100" rows="4" placeholder="例如：模擬考數學又考差了，覺得怎麼讀都沒用……"></textarea><p id="wish-msg" role="alert"></p><button id="ask-send">請上神指點</button>');
+$('#ask-send').addEventListener('click',()=>{const text=($('#ask') as HTMLTextAreaElement).value.trim(),verdict=checkWish(text,{vent:true}),msg=$('#wish-msg');
+if(!verdict.ok){msg.textContent=verdict.reason;msg.className=verdict.care?'care':'';return}
+const r=sageReply(text);sageBusy=true;modal.close();scene.toast('上神：「讓本上神幫你計算陰影面積。」');
+setTimeout(()=>{void scene.sageWrite(r.board,5000).then(()=>{sageBusy=false;show('<h2>📐 數學上神</h2><p class="muted">'+r.opener+'</p><div class="card sage-'+({驚恐:'shock',嚴肅:'firm',安慰:'warm'}[r.tone])+'"><b>'+r.tone+'地說：</b><br>「'+r.reply+'」</div><p class="muted">上神的話是依你留言裡的字詞挑選的鼓勵，不是真人或 AI 的回覆。若心裡真的很難受，請找輔導老師聊聊。</p>')})},1600)})}
 function blessing(){show('<h2>✨ 排隊補運</h2><p>掃走一點煩惱，裝滿一點勇氣。</p><p id="queue-info"></p><div id="queue-line" class="queue-line" aria-label="排隊中的同學"></div><div id="bless-card"></div><div class="actions"><button id="join">排隊補運</button><button id="leave">離開隊伍</button></div><p class="muted">以伺服器時間排序。純前端版本無法保證抵抗惡意插隊；每位同學只能更動自己的紀錄。</p>');$('#join').onclick=()=>safe(async()=>{await onDisconnect(ref(database,'queue/'+uid)).remove();const q=places.queue(1);place(q.x,q.y);state('queue');await runTransaction(ref(database,'queue/'+uid),current=>current||{joinedAt:serverTimestamp()})});$('#leave').onclick=()=>safe(async()=>{await remove(ref(database,'queue/'+uid));state('walking')});processQueue()}
 const blessings=['你不必完美，也能勇敢向前。今天試著肯定自己一次。','煩惱掃一掃，心裡就多出放勇氣的位置。慢慢來，你可以的。','星光記得你每一次的努力。累的時候，記得這裡有人陪你。','勇氣不是不害怕，而是帶著害怕也願意再試一次。','今天的你已經很努力了。回去好好吃飯、好好睡覺。','願你讀書時專心，休息時安心，面對考卷時有一顆平靜的心。'];
 const stageText=()=>{const t=Date.now()-blessStart;return t<2400?'🧹 聖光灑下，正在掃走煩惱……':t<4800?'💪 正在補充勇氣……':'✨ 星光環繞中……'};

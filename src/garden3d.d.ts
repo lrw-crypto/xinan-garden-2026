@@ -13,6 +13,8 @@ export class Garden3D{
   moved:(x:number,y:number)=>void;
   interact:(index:number)=>void;
   stop():void;
+  /** 數學上神轉身在黑板上寫 lines，歷時 ms 毫秒後轉回來。 */
+  sageWrite(lines:string[],ms:number):Promise<void>;
   /** 在庭院上方跳出一則短訊息。 */
   toast(text:string):void;
   /** 從第 index 個景點走到它前方的空地。 */

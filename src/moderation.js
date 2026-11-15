@@ -21,10 +21,12 @@ const hit=(text,list)=>list.find(w=>text.includes(w));
  * 檢查一句心願。回傳 {ok:true}，或 {ok:false, reason, care?}。
  * care 為 true 表示內容透露出很辛苦的心情：除了不掛上樹，也請對方找輔導老師。
  */
-export function checkWish(raw){
+export function checkWish(raw,opts={}){
+ // opts.vent：給數學上神的留言可以訴苦，所以不擋負面字眼，字數上限 100
+ const max=opts.vent?100:120;
  const original=String(raw??'').trim();
  if(!original)return{ok:false,reason:'先寫下一句心願吧。'};
- if(original.length>120)return{ok:false,reason:'心願請控制在 120 字以內。'};
+ if(original.length>max)return{ok:false,reason:'請控制在 '+max+' 字以內。'};
  if(/[<>]/.test(original))return{ok:false,reason:'請不要使用 < > 這類符號。'};
  let text=squash(original);
  if(hit(text,SELF_HARM))return{ok:false,care:true,reason:'看起來你現在很辛苦。這句話先不掛上樹，但請不要一個人撐著——可以找輔導老師或信任的大人聊聊，也可以撥打 1925 安心專線（24 小時）。'};
@@ -36,7 +38,7 @@ export function checkWish(raw){
  const contact=hit(text,CONTACT);
  if(contact)return{ok:false,reason:'請不要留下姓名、聯絡方式或社群帳號（偵測到「'+contact+'」）。'};
  if(hit(text,RUDE))return{ok:false,reason:'這句話裡有不太合適的用詞，換個溫柔一點的說法吧。'};
- if(hit(text,LOVE)||/我愛(?!自己|我的|我們|大家|家|學習|讀書|看書|閱讀|爸|媽|生命|生活|運動|畫畫|音樂|這|大自然|地球|台灣|學校)/.test(text))return{ok:false,reason:'祈福樹只收給自己或大家的祝福，不收告白喔。'};
- if(hit(text,HOSTILE))return{ok:false,reason:'這句話聽起來有些負面。試著改寫成你希望發生的好事，例如「希望我能更有耐心」。'};
+ if(!opts.vent&&hit(text,LOVE)||/我愛(?!自己|我的|我們|大家|家|學習|讀書|看書|閱讀|爸|媽|生命|生活|運動|畫畫|音樂|這|大自然|地球|台灣|學校)/.test(text))return{ok:false,reason:'祈福樹只收給自己或大家的祝福，不收告白喔。'};
+ if(!opts.vent&&hit(text,HOSTILE))return{ok:false,reason:'這句話聽起來有些負面。試著改寫成你希望發生的好事，例如「希望我能更有耐心」。'};
  return{ok:true};
 }
