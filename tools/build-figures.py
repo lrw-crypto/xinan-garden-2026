@@ -44,7 +44,6 @@ for n in names:
         rgba=cv2.cvtColor(src,cv2.COLOR_BGR2RGBA);rgba[:,:,3]=a;crop=rgba[by0:by1,bx0:bx1];H,W=crop.shape[:2]
         Image.fromarray(crop).resize((round(W*SC),round(H*SC)),Image.LANCZOS).save(f'{O}{code[n]}-{pose}.webp',quality=88,method=6)
         d={'w':W,'h':H}
-        if em and pose!='side':d['emblem']=[round((em[0]-bx0)/W,4),round((em[1]-by0)/H,4),round(2*em[2]/W,4)]
         hard=m>127
         if pose in('front','back'):
             cy=885;row=np.where(hard[1000,x0:x1])[0]+x0;gaps=np.where(np.diff(row)>6)[0]
