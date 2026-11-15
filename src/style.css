@@ -151,3 +151,8 @@ label.check input{width:18px;height:18px}
 .places .qr figcaption{margin-top:8px;font-size:15px;font-weight:800;letter-spacing:2px;color:#7d506a}
 .places::after{order:3}
 @media(max-width:1000px){.places .qr{display:none}}
+
+/* 數學上神的回話卡 */
+.card.sage-warm{background:#fff7e6;border:1px solid #f0d9a8}.card.sage-firm{background:#eef3f8;border:1px solid #c5d3e2}.card.sage-shock{background:#fff0f0;border:1px solid #f1c3c3}
+.card[class*=sage-]{font-size:16px;line-height:1.9;padding:16px 18px}
+#ask{width:100%}
