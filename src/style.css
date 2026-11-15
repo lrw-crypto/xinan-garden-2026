@@ -144,3 +144,10 @@ label.check input{width:18px;height:18px}
 /* 登入：十一種造型排成格狀 */
 .student-options{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;max-height:46vh;overflow:auto;padding:4px}
 .student-choice{max-width:none;padding:8px 4px;gap:4px}.student-choice .student-portrait{height:104px}.student-choice img.student-body{height:100%}
+
+/* 小院漫遊指南裡的 QR Code：展示時讓同學用手機掃描進站 */
+.places .qr{order:2;margin:6px 0 0;padding:12px 10px 10px;text-align:center;background:#fffdf8;border:1px dashed #e3c7d4;border-radius:18px}
+.places .qr img{display:block;width:100%;max-width:190px;height:auto;margin:0 auto;border-radius:12px}
+.places .qr figcaption{margin-top:8px;font-size:15px;font-weight:800;letter-spacing:2px;color:#7d506a}
+.places::after{order:3}
+@media(max-width:1000px){.places .qr{display:none}}
