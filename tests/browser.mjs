@@ -17,6 +17,8 @@ for(const page of pages){assert(await page.evaluate(()=>document.documentElement
 for(const page of pages)assert.equal(await page.locator('#garden canvas').count(),1);
 await pages[0].waitForTimeout(1500);
 assert.deepEqual(pageErrors,[]);
+// 3D 導覽頁可以載入、能切換景點，且沒有頁面錯誤
+const tour=await a.newPage();const tourErrors=[];tour.on('pageerror',e=>tourErrors.push(e.message));await tour.goto(new URL('showcase.html',pages[0].url()).href);await tour.locator('#stage canvas').waitFor();await tour.getByRole('button',{name:'靜心亭子'}).first().click();await tour.waitForTimeout(1200);assert.deepEqual(tourErrors,[]);await tour.close();
 mkdirSync('test-results',{recursive:true});
 await pages[1].screenshot({path:'test-results/garden-mobile.png',fullPage:true});
 await pages[0].screenshot({path:'test-results/garden-desktop.png',fullPage:true});

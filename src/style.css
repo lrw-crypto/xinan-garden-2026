@@ -158,3 +158,27 @@ label.check input{width:18px;height:18px}
 #ask{width:100%}
 
 #wish-msg.care{font-size:18px;font-weight:700;text-align:center;padding:18px 14px}
+
+/* ── 3D 導覽頁 ── */
+body.showcase{margin:0;overflow:hidden;background:#fbe6dc}
+body.showcase #stage{position:fixed;inset:0;height:100dvh;border:0;border-radius:0}
+body.showcase #stage::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 55%,#5a2f4426 100%)}
+.g3-show .g3-hud,.g3-show .g3-hint,.g3-show .g3-prompt{display:none}
+.g3-show .g3-canvas{cursor:grab}.g3-show .g3-canvas:active{cursor:grabbing}
+#ui{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:clamp(14px,3vw,34px);z-index:5}
+#ui>*{pointer-events:auto}
+.sc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.sc-kicker{margin:0;font-size:11px;letter-spacing:4px;color:#a3687f}
+.sc-head h1{margin:2px 0 0;font-family:"Noto Serif TC","Songti TC",serif;font-size:clamp(40px,7vw,84px);line-height:1.05;letter-spacing:.12em;color:#6a3350;text-shadow:0 2px 0 #fff8,0 10px 30px #fff9}
+.sc-tag{margin:8px 0 0;font-size:clamp(14px,1.6vw,19px);letter-spacing:.2em;color:#7d506a}
+.sc-cta{flex-shrink:0;padding:14px 26px;border-radius:999px;background:#8f2f35;color:#ffe9b0;font-weight:800;letter-spacing:.12em;text-decoration:none;box-shadow:0 10px 26px #8f2f3544;border:1px solid #ffe08a88}
+.sc-cta:hover{background:#a5373d}
+.sc-nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:auto}
+.sc-nav button{padding:10px 18px;border-radius:999px;background:#fffaf3e6;color:#6a4057;border:1px solid #ecd3dd;font-size:14px;font-weight:600;backdrop-filter:blur(6px)}
+.sc-nav button[aria-pressed="true"]{background:#6a3350;color:#fff;border-color:#6a3350}
+.sc-note{margin:12px auto 0;max-width:34em;text-align:center;font-size:15px;line-height:1.8;color:#5d4252;background:#fffaf3d9;padding:8px 18px;border-radius:16px;backdrop-filter:blur(6px)}
+@media(max-width:600px){.sc-cta{padding:10px 16px;font-size:13px}.sc-nav button{padding:8px 12px;font-size:13px}.sc-note{font-size:13px}}
+
+.tour-link{margin-left:auto;margin-right:12px;padding:7px 14px;border-radius:999px;background:#fff6ee;border:1px solid #ecd3dd;color:#7d506a;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap}
+
+.sc-head{background:none!important;border:0!important;box-shadow:none!important;padding:0!important;position:static!important;backdrop-filter:none!important}

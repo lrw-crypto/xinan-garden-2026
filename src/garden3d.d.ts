@@ -5,7 +5,7 @@ export const spots:{name:string;x:number;y:number}[];
 /** 場景內固定站位，皆為資料庫座標。 */
 export const places:{spawn:Point;hutDoor:Point;queue:(index:number)=>Point};
 export class Garden3D{
-  constructor(host:HTMLElement,opts:{assetBase:string;figures:{ref:number;styles:Record<string,Record<string,{w:number;h:number;emblem?:number[];legs?:Record<string,number>}>>}});
+  constructor(host:HTMLElement,opts:{assetBase:string;showcase?:boolean;figures:{ref:number;styles:Record<string,Record<string,{w:number;h:number;emblem?:number[];legs?:Record<string,number>}>>}});
   /** false 表示瀏覽器無法建立 WebGL，庭院不顯示，但其餘介面仍可使用。 */
   ok:boolean;
   players:Record<string,Player>;
@@ -13,6 +13,8 @@ export class Garden3D{
   moved:(x:number,y:number)=>void;
   interact:(index:number)=>void;
   stop():void;
+  /** 展示模式：把鏡頭帶到第 index 個景點，-1 為全景。 */
+  tour(index:number):void;
   /** 數學上神轉身在黑板上寫 lines，歷時 ms 毫秒後轉回來。 */
   sageWrite(lines:string[],ms:number):Promise<void>;
   /** 在庭院上方跳出一則短訊息。 */

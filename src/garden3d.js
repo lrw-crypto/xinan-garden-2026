@@ -83,8 +83,24 @@ function partGeo(u0,u1,v0,v1,px,py){
 
 // ── 小工具 ──
 function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+// ── 材質細節：用畫布畫出木紋、瓦片、灰泥、草地、石面的明暗紋理，乘在材質顏色上（沒有使用任何外部圖片） ──
+const details=new Map();
+function detail(kind){
+ let t=details.get(kind);if(t)return t;
+ const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d'),r=rng(kind.length*977+kind.charCodeAt(0));
+ x.fillStyle='#fff';x.fillRect(0,0,256,256);
+ const speck=(n,a,size)=>{for(let i=0;i<n;i++){x.fillStyle=`rgba(${r()<.5?0:255},${r()<.5?0:255},${r()<.5?0:255},${a*r()})`;x.fillRect(r()*256,r()*256,size*(.5+r()),size*(.5+r()))}};
+ if(kind==='wood'){for(let i=0;i<70;i++){x.strokeStyle=`rgba(90,50,30,${.05+r()*.12})`;x.lineWidth=.6+r()*2;x.beginPath();let y=r()*256;x.moveTo(0,y);for(let k=1;k<=8;k++)x.lineTo(k*32,y+=(r()-.5)*5);x.stroke()}speck(500,.05,2)}
+ else if(kind==='tile'){for(let row=0;row<8;row++){const y=row*32;const g=x.createLinearGradient(0,y,0,y+32);g.addColorStop(0,'rgba(255,255,255,.22)');g.addColorStop(.75,'rgba(0,40,40,.02)');g.addColorStop(1,'rgba(0,30,30,.34)');x.fillStyle=g;x.fillRect(0,y,256,32);for(let k=0;k<8;k++){x.fillStyle='rgba(0,30,30,.16)';x.fillRect(k*32+(row%2?16:0),y,2,32)}}speck(300,.05,3)}
+ else if(kind==='plaster'){speck(1400,.045,3);for(let i=0;i<14;i++){x.fillStyle=`rgba(120,90,60,${.03*r()})`;x.beginPath();x.ellipse(r()*256,r()*256,20+r()*50,8+r()*20,r()*3,0,7);x.fill()}}
+ else if(kind==='grass'){for(let i=0;i<2600;i++){x.strokeStyle=`rgba(${r()<.5?'30,90,40':'255,255,200'},${.05+r()*.1})`;x.lineWidth=1;const px=r()*256,py=r()*256;x.beginPath();x.moveTo(px,py);x.lineTo(px+(r()-.5)*4,py-3-r()*5);x.stroke()}}
+ else{speck(1600,.07,2.5);for(let i=0;i<10;i++){x.strokeStyle=`rgba(80,70,90,${.06+r()*.08})`;x.lineWidth=.8;x.beginPath();let px=r()*256,py=r()*256;x.moveTo(px,py);for(let k=0;k<5;k++)x.lineTo(px+=(r()-.5)*50,py+=(r()-.5)*50);x.stroke()}}
+ t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=8;
+ if(kind==='grass')t.repeat.set(.6,.6);if(kind==='tile')t.repeat.set(2,1);
+ details.set(kind,t);return t}
+const DETAIL={'#dc9a6b':'wood','#b9744d':'wood','#cf6650':'wood','#8a5a48':'wood','#4d3833':'wood','#e6a878':'wood','#62b6ae':'tile','#4c9f98':'tile','#fcf0de':'plaster','#efe3d2':'stone','#f6e8cf':'stone','#f4cdd9':'stone','#b9add9':'stone','#cdbfe6':'stone','#d9cfc4':'stone','#e9dcc6':'stone','#93cf8c':'grass','#82c47f':'grass','#b4dfa8':'grass'};
 const mats=new Map();
-function mat(color,extra){const key=color+JSON.stringify(extra||'');let m=mats.get(key);if(!m){m=new THREE.MeshStandardMaterial({color,roughness:.82,metalness:0,...extra});mats.set(key,m)}return m}
+function mat(color,extra){const key=color+JSON.stringify(extra||'');let m=mats.get(key);if(!m){const kind=DETAIL[color];m=new THREE.MeshStandardMaterial({color,roughness:kind==='tile'?.55:.82,metalness:0,...(kind?{map:detail(kind)}:{}),...extra});mats.set(key,m)}return m}
 function put(parent,geo,material,x,y,z,o={}){const m=new THREE.Mesh(geo,material);m.position.set(x,y,z);if(o.rx)m.rotation.x=o.rx;if(o.ry)m.rotation.y=o.ry;if(o.rz)m.rotation.z=o.rz;if(o.s)m.scale.set(...o.s);m.castShadow=o.cast!==false;m.receiveShadow=true;parent.add(m);return m}
 const box=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
 const cyl=(a,b,h,n=20)=>new THREE.CylinderGeometry(a,b,h,n);
@@ -95,7 +111,7 @@ function mergeGeo(list){
 function stick(parent,a,b,r,material){const A=new THREE.Vector3(...a),B=new THREE.Vector3(...b),m=put(parent,cyl(r,r,A.distanceTo(B),8),material,(A.x+B.x)/2,(A.y+B.y)/2,(A.z+B.z)/2);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),B.sub(A).normalize());return m}
 function signTexture(text,fg,bg){const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');g.fillStyle=bg;g.beginPath();g.arc(64,64,62,0,7);g.fill();g.fillStyle=fg;g.font='bold 78px "Noto Sans TC",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(text,64,70);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t}
 
-const C={grass:'#aadca6',grass2:'#9bd19a',base:'#8d5f80',stone:'#f6e8cf',stone2:'#f4cdd9',rock:'#b9add9',rock2:'#cdbfe6',trunk:'#8a5a48',wood:'#dc9a6b',woodDark:'#b9744d',column:'#cf6650',wall:'#fcf0de',roof:'#62b6ae',roofDark:'#4c9f98',trim:'#f6dfa9',gold:'#f2c14e',lantern:'#e8553f',water:'#8fd8e2',water2:'#b9ebef',pink:'#f8b9d4',pink2:'#fbd0e2',pink3:'#f29cc2',leaf:'#7fbf7a',leaf2:'#9bd18c',cushion:'#b79ad6',white:'#fffaf2'};
+const C={grass:'#93cf8c',grass2:'#82c47f',base:'#8d5f80',stone:'#f6e8cf',stone2:'#f4cdd9',rock:'#b9add9',rock2:'#cdbfe6',trunk:'#8a5a48',wood:'#dc9a6b',woodDark:'#b9744d',column:'#cf6650',wall:'#fcf0de',roof:'#62b6ae',roofDark:'#4c9f98',trim:'#f6dfa9',gold:'#f2c14e',lantern:'#e8553f',water:'#8fd8e2',water2:'#b9ebef',pink:'#f8b9d4',pink2:'#fbd0e2',pink3:'#f29cc2',leaf:'#7fbf7a',leaf2:'#9bd18c',cushion:'#b79ad6',white:'#fffaf2'};
 
 export class Garden3D{
  players={};uid='';target=undefined;moved=()=>{};interact=()=>{};cheer=()=>{};ok=false;
@@ -103,16 +119,22 @@ export class Garden3D{
  this.host=host;this.opts=opts;this.actors=new Map();this.keys=new Set();this.pointers=new Map();
  this.reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
  this.cam={yaw:.5,pitch:.8,dist:host.clientWidth<600?24:27,follow:true,mode:'pan',t:new THREE.Vector3(0,0,6)};
+ // 展示模式：沒有人物，鏡頭自動環繞，可拖曳旋轉、縮放，點景點會飛過去
+ if(opts.showcase){Object.assign(this.cam,{yaw:.55,pitch:.42,dist:host.clientWidth<700?112:56,follow:false,mode:'rotate'});this.cam.t.set(0,1.5,0);this.view={t:this.cam.t.clone(),dist:this.cam.dist,pitch:this.cam.pitch};this.idle=0}
  this.jump={y:0,v:0};this.pendingSpot=-1;this.wishSlot=0;this.swayers=[];this.animated=[];
- host.classList.add('g3');
+ host.classList.add('g3');if(opts.showcase)host.classList.add('g3-show');
  host.innerHTML='<canvas class="g3-canvas" aria-label="輔導寺 3D 庭院"></canvas><div class="g3-labels"></div><div class="g3-hint"></div><button type="button" class="g3-prompt" hidden></button><div class="g3-toast" role="status" hidden></div><div class="g3-cheer" hidden><p></p><div><button type="button" data-cheer="💪 加油">加油</button><button type="button" data-cheer="💛 謝謝">謝謝</button><button type="button" data-cheer="🌷 陪伴">陪伴</button><button type="button" data-cheer="" aria-label="取消">×</button></div></div><div class="g3-swipe" hidden><p></p><div class="g3-pips" aria-hidden="true"></div><button type="button">接引聖光</button></div><div class="g3-hud"><button type="button" data-act="jump" aria-label="跳躍">跳躍</button><button type="button" data-act="home" aria-label="找自己">找自己</button><button type="button" data-act="mode" aria-label="切換拖曳方式">拖曳：平移</button><button type="button" data-act="spin" aria-label="旋轉視角">⟳</button><button type="button" data-act="in" aria-label="放大">＋</button><button type="button" data-act="out" aria-label="縮小">－</button></div>';
  this.canvas=host.querySelector('canvas');this.labels=host.querySelector('.g3-labels');this.prompt=host.querySelector('.g3-prompt');this.hint=host.querySelector('.g3-hint');
  this.hint.textContent=matchMedia('(pointer: coarse)').matches?'點地面走路・拖曳平移・雙指縮放與旋轉':'點地面或 WASD 走路・空白鍵跳躍・E 互動・滾輪縮放・右鍵拖曳旋轉';
  try{this.renderer=new THREE.WebGLRenderer({canvas:this.canvas,antialias:true,powerPreference:'low-power'})}
  catch(e){this.hint.textContent='這個瀏覽器無法顯示 3D 庭院，仍可使用右側（下方）的五個按鈕互動。';host.classList.add('g3-failed');return}
  this.ok=true;
- const r=this.renderer;r.outputColorSpace=THREE.SRGBColorSpace;r.shadowMap.enabled=true;r.shadowMap.type=THREE.PCFSoftShadowMap;
- this.scene=new THREE.Scene();this.scene.background=new THREE.Color('#fdeee6');this.scene.fog=new THREE.Fog('#fdeee6',55,110);
+ const r=this.renderer;r.outputColorSpace=THREE.SRGBColorSpace;r.shadowMap.enabled=true;r.shadowMap.type=THREE.PCFSoftShadowMap;r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=.92;
+ this.scene=new THREE.Scene();this.scene.background=new THREE.Color('#fdeee6');this.scene.fog=new THREE.Fog('#fbe6dc',70,170);
+ // 天空：由地平線的暖桃色漸層到高處的淡藍，另有幾抹雲；同一片天空也拿來當環境反射
+ {const sky=new THREE.Mesh(new THREE.SphereGeometry(180,32,16),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,uniforms:{},vertexShader:'varying vec3 p;void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+ fragmentShader:'varying vec3 p;float h(vec2 v){return fract(sin(dot(v,vec2(127.1,311.7)))*43758.5453);}float n(vec2 v){vec2 i=floor(v),f=fract(v);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}void main(){vec3 d=normalize(p);float t=clamp(d.y*1.25+.08,0.,1.);vec3 c=mix(vec3(1.,.90,.84),vec3(.80,.89,.97),smoothstep(0.,.55,t));c=mix(c,vec3(.62,.80,.96),smoothstep(.45,1.,t));vec2 u=d.xz/(d.y+.35)*2.2;float cl=smoothstep(.55,.85,n(u)*.6+n(u*2.3)*.4)*smoothstep(.03,.3,d.y);c=mix(c,vec3(1.,.97,.95),cl*.75);float s=pow(max(dot(d,normalize(vec3(-.5,.55,.45))),0.),40.);c+=vec3(1.,.85,.6)*s*.5;gl_FragColor=vec4(c,1.);}'}));
+ this.scene.add(sky);const env=new THREE.Scene();env.add(sky.clone());const pm=new THREE.PMREMGenerator(r);this.scene.environment=pm.fromScene(env,.04).texture;this.scene.environmentIntensity=.4;pm.dispose()}
  this.camera=new THREE.PerspectiveCamera(30,1,.5,200);
  this.build();this.bindInput();
  new ResizeObserver(()=>this.resize()).observe(host);this.resize();
@@ -125,8 +147,8 @@ export class Garden3D{
  // ── 場景建模 ──
  build(){
  const s=this.scene,rand=rng(20261114);
- s.add(new THREE.HemisphereLight('#fff6ea','#ecc9d6',1.45));
- const sun=new THREE.DirectionalLight('#fff0d2',1.55);sun.position.set(-18,30,16);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+ s.add(new THREE.HemisphereLight('#fff3e2','#d9b5a8',.85));
+ const sun=new THREE.DirectionalLight('#ffe6bd',2.5);sun.position.set(-18,30,16);sun.castShadow=true;sun.shadow.mapSize.set(this.opts.showcase?4096:2048,this.opts.showcase?4096:2048);sun.shadow.radius=3;
  Object.assign(sun.shadow.camera,{left:-32,right:32,top:26,bottom:-26,near:1,far:90});sun.shadow.bias=-.0006;sun.shadow.normalBias=.04;s.add(sun);
  // 底座：圓角草地，側面是莓紫色，像桌上的小模型
  const shape=new THREE.Shape(),W=24.5,D=18.5,R=4;
@@ -151,8 +173,13 @@ export class Garden3D{
  buildPond(rand){
  const s=this.scene,g=new THREE.Group();g.position.set(POND.x,0,POND.z);s.add(g);
  put(g,cyl(1,1,.1,48),mat('#e9dcc6'),0,.02,0,{s:[POND.rx+.35,1,POND.rz+.35],cast:false});
- put(g,cyl(1,1,.1,48),mat(C.water,{roughness:.25}),0,.05,0,{s:[POND.rx,1,POND.rz],cast:false});
- put(g,cyl(1,1,.1,32),mat(C.water2,{roughness:.25}),-1.5,.07,.4,{s:[2.2,1,1.3],cast:false});
+ // 水面：會流動的波紋法線貼圖，反射天空
+ const wc=document.createElement('canvas');wc.width=wc.height=256;{const x=wc.getContext('2d'),im=x.createImageData(256,256),hgt=(u,v)=>Math.sin(u*.098+Math.sin(v*.049)*2)+Math.sin(v*.123+u*.049)*.7+Math.sin((u+v)*.196)*.4;
+ for(let v=0;v<256;v++)for(let u=0;u<256;u++){const dx=hgt(u+1,v)-hgt(u-1,v),dy=hgt(u,v+1)-hgt(u,v-1),i=(v*256+u)*4;im.data[i]=128+dx*60;im.data[i+1]=128+dy*60;im.data[i+2]=255;im.data[i+3]=255}x.putImageData(im,0,0)}
+ this.waterNormal=new THREE.CanvasTexture(wc);this.waterNormal.wrapS=this.waterNormal.wrapT=THREE.RepeatWrapping;this.waterNormal.repeat.set(3,3);
+ const water=new THREE.MeshStandardMaterial({color:'#6fc3cf',roughness:.06,metalness:.25,normalMap:this.waterNormal,normalScale:new THREE.Vector2(.35,.35),envMapIntensity:1.6,transparent:true,opacity:.93});
+ put(g,cyl(1,1,.1,48),water,0,.05,0,{s:[POND.rx,1,POND.rz],cast:false});
+ 
  for(let i=0;i<26;i++){const t=i/26*Math.PI*2+rand()*.1;if(Math.abs(Math.cos(t)*POND.rx)<1.6)continue;put(g,ball(.42+rand()*.3,1),mat(i%3?C.rock:C.rock2),Math.cos(t)*(POND.rx+.2),.12,Math.sin(t)*(POND.rz+.2),{s:[1.1,.6,1]})}
  for(let i=0;i<7;i++){const X=(rand()-.5)*POND.rx*1.4,Z=(rand()-.5)*POND.rz*1.3;if(Math.abs(X)<1.6)continue;put(g,cyl(.42,.42,.04,14),mat(C.leaf),X,.11,Z,{cast:false});if(i%2)put(g,ball(.16,1),mat(C.pink3),X,.22,Z)}
  // 錦鯉：紡錘形的身體、會擺動的尾鰭、背鰭、胸鰭與花斑
@@ -394,13 +421,13 @@ export class Garden3D{
  c.addEventListener('contextmenu',e=>e.preventDefault());
  c.addEventListener('pointerdown',e=>{c.setPointerCapture(e.pointerId);this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,t:performance.now(),drag:false,rot:e.button===2||e.shiftKey});if(this.pointers.size===2)this.pinch=pair()});
  c.addEventListener('pointermove',e=>{const p=this.pointers.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
- if(this.pointers.size===2){const now=pair();if(this.pinch){this.cam.dist=clamp(this.cam.dist*this.pinch.d/Math.max(now.d,1),9,46);let da=now.a-this.pinch.a;if(da>Math.PI)da-=2*Math.PI;if(da<-Math.PI)da+=2*Math.PI;this.cam.yaw-=da}this.pinch=now;for(const q of this.pointers.values())q.drag=true;return}
+ if(this.pointers.size===2){const now=pair();if(this.pinch){this.cam.dist=clamp(this.cam.dist*this.pinch.d/Math.max(now.d,1),9,this.view?140:46);let da=now.a-this.pinch.a;if(da>Math.PI)da-=2*Math.PI;if(da<-Math.PI)da+=2*Math.PI;this.cam.yaw-=da}this.pinch=now;for(const q of this.pointers.values())q.drag=true;return}
  if(!p.drag&&Math.hypot(e.clientX-p.sx,e.clientY-p.sy)<8)return;p.drag=true;if(this.swipe)return;
- if(p.rot||this.cam.mode==='rotate'){this.cam.yaw-=dx*.007;this.cam.pitch=clamp(this.cam.pitch+dy*.004,.35,1.15)}
+ if(p.rot||this.cam.mode==='rotate'){this.cam.yaw-=dx*.007;this.cam.pitch=clamp(this.cam.pitch+dy*.004,this.view?.12:.35,1.15);if(this.view){this.view.pitch=this.cam.pitch;this.idle=-4}}
  else{const k=2*this.cam.dist*Math.tan(this.camera.fov*Math.PI/360)/this.h,sy=Math.sin(this.cam.yaw),cy=Math.cos(this.cam.yaw);this.cam.follow=false;this.cam.t.x+=(-cy*dx-sy*dy/Math.sin(this.cam.pitch))*k;this.cam.t.z+=(sy*dx-cy*dy/Math.sin(this.cam.pitch))*k;this.cam.t.x=clamp(this.cam.t.x,-24,24);this.cam.t.z=clamp(this.cam.t.z,-18,18)}});
  const up=e=>{const p=this.pointers.get(e.pointerId);this.pointers.delete(e.pointerId);this.pinch=undefined;if(p&&this.swipe&&p.drag&&Math.hypot(e.clientX-p.sx,e.clientY-p.sy)>45){this.addSwipe();return}if(!p||p.drag||e.type==='pointercancel'||performance.now()-p.t>600||p.rot)return;const who=this.pickActor(e);if(who){this.openCheer(who);return}this.closeCheer();const pt=groundAt(e);if(pt)this.walkTo(pt.x,pt.z)};
  c.addEventListener('pointerup',up);c.addEventListener('pointercancel',up);
- c.addEventListener('wheel',e=>{e.preventDefault();this.cam.dist=clamp(this.cam.dist*(e.deltaY>0?1.1:.9),9,46)},{passive:false});
+ c.addEventListener('wheel',e=>{e.preventDefault();this.cam.dist=clamp(this.cam.dist*(e.deltaY>0?1.1:.9),9,this.view?140:46);if(this.view){this.view.dist=this.cam.dist;this.idle=-4}},{passive:false});
  const typing=()=>document.querySelector('dialog[open]')||/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||'');
  const KEY={ArrowUp:'u',KeyW:'u',ArrowDown:'d',KeyS:'d',ArrowLeft:'l',KeyA:'l',ArrowRight:'r',KeyD:'r'};
  window.addEventListener('keydown',e=>{if(typing()||!this.uid||e.ctrlKey||e.metaKey||e.altKey)return;if(KEY[e.code]){this.keys.add(KEY[e.code]);e.preventDefault()}else if(e.code==='Space'){this.doJump();e.preventDefault()}else if(e.code==='KeyE'&&this.near>=0)this.interact(this.near)});
@@ -412,7 +439,7 @@ export class Garden3D{
  this.cheerBox=this.host.querySelector('.g3-cheer');
  this.cheerBox.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const id=this.cheerTo;this.closeCheer();if(b.dataset.cheer&&id&&this.players[id])this.cheer(id,b.dataset.cheer)});
  this.prompt.addEventListener('click',()=>{if(this.near>=0)this.interact(this.near)});
- this.labels.addEventListener('click',e=>{const i=e.target.closest('[data-spot]')?.dataset.spot;if(i!==undefined)this.goSpot(Number(i))});
+ this.labels.addEventListener('click',e=>{const i=e.target.closest('[data-spot]')?.dataset.spot;if(i!==undefined){if(this.view)this.tour(Number(i));else this.goSpot(Number(i))}});
  }
  walkTo(X,Z){const me=this.players[this.uid];if(!me)return;const from=this.pos?[this.pos.x,this.pos.z]:toWorld(me.x,me.y);this.path=route(from,[clamp(X,-BOUND.x,BOUND.x),clamp(Z,BOUND.zMin,BOUND.zMax)]);const [x,z]=this.path.shift();this.target={x,z};this.pendingSpot=-1;this.cam.follow=true;this.stuck=0}
  /** 走到某個互動點，抵達後自動開啟。 */
@@ -448,6 +475,8 @@ export class Garden3D{
  walkOut(i){this.walkTo(STAND[i][0],STAND[i][1]+.9)}
  /** 在庭院上方跳出一則短訊息，幾秒後自動消失。 */
  toast(text){const el=this.host.querySelector('.g3-toast');el.textContent=text;el.hidden=false;clearTimeout(this.toastTimer);this.toastTimer=setTimeout(()=>{el.hidden=true},3500)}
+ /** 展示模式：把鏡頭帶到第 i 個景點（-1 為全景）。 */
+ tour(i){if(!this.view)return;this.idle=-6;if(i<0){this.view.t.set(0,1.5,0);this.view.dist=this.w<700?112:56;this.view.pitch=.42}else{const [x,y,z]=TAG_AT[i];this.view.t.set(x,Math.min(2.6,y*.45),z+(i===3?0:1));this.view.dist=[26,22,22,30,20][i];this.view.pitch=.36}}
  /** 停止自動行走（例如被安排坐下或排隊時）。 */
  stop(){this.target=undefined;this.path=undefined;this.pendingSpot=-1}
  doJump(){if(this.jump.y===0&&this.players[this.uid])this.jump.v=6.2}
@@ -547,6 +576,7 @@ export class Garden3D{
  for(const [id,a] of this.actors)if(!this.players[id]){this.scene.remove(a.root);a.tag.remove();this.actors.delete(id)}
  // 鏡頭
  const mine=this.actors.get(this.uid);
+ if(this.view){const k=Math.min(1,dt*2.2),v=this.view;cam.t.lerp(v.t,k);if(!this.pointers.size){cam.dist+=(v.dist-cam.dist)*k;cam.pitch+=(v.pitch-cam.pitch)*k}else v.dist=cam.dist;this.idle+=dt;if(this.idle>0&&!this.reduceMotion)cam.yaw+=dt*.085*Math.min(1,this.idle)}
  if(mine&&cam.follow){const k=Math.min(1,dt*6);cam.t.x+=(mine.X-cam.t.x)*k;cam.t.z+=(mine.Z-cam.t.z)*k;cam.t.y+=(mine.y-cam.t.y)*k}
  if(this.spinTo!==undefined){cam.yaw+=(this.spinTo-cam.yaw)*Math.min(1,dt*7);if(Math.abs(this.spinTo-cam.yaw)<.005){cam.yaw=this.spinTo;this.spinTo=undefined}}
  // 自己補運時鏡頭回到人物身上並拉近一些
@@ -563,6 +593,7 @@ this.walls.n.visible=cpos.z>-16;this.walls.s.visible=cpos.z<16;this.walls.w.visi
  s.fig.rotation.z=this.reduceMotion?0:Math.sin(t*14)*.025;s.fig.position.x=this.reduceMotion?0:Math.sin(t*2.2)*.35;
  if(k>=1){s.writing=false;s.fig.material=s.front;s.fig.rotation.z=0;s.fig.position.x=0;this.cam.follow=true;const d=s.done;s.done=undefined;if(d)d()}}
  else s.fig.position.y=this.reduceMotion?0:Math.sin(t*1.6)*.02}
+ if(this.waterNormal&&!this.reduceMotion){this.waterNormal.offset.x=t*.012;this.waterNormal.offset.y=t*.008}
  // 場景動態
  for(const sw of this.swayers)sw.o.rotation.z=this.reduceMotion?0:Math.sin(t*sw.sp+sw.ph)*sw.amp;
  this.animated=this.animated.filter(fn=>fn(t)!==false);
