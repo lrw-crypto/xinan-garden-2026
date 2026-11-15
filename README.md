@@ -1,4 +1,4 @@
-# 草商輔導寺
+# 輔導寺
 有心誠則靈，努力自有光。
 
 Vite + TypeScript + three.js（r170，內含於 src/vendor）+ Firebase Authentication / Realtime Database。庭院是以程式建模的 3D 黏土風場景（青松、梅樹、錦鯉池與拱橋、青綠瓦屋頂、紅燈籠、繪馬架），全部由基本幾何體組成，沒有使用外部模型，也沒有複製參考圖或參考網站的素材。學生公仔為透明去背的立牌圖，胸口疊上原始校徽。匿名登入，不收集真實姓名、Email 或密碼。
