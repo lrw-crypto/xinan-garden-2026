@@ -140,3 +140,7 @@ footer{margin:0 16px;padding:12px}
 label.check{display:inline-flex;align-items:center;gap:6px;margin:2px 14px 0 2px;font-size:14px}
 label.check input{width:18px;height:18px}
 @media(max-width:520px){.avatar-pick{grid-template-columns:1fr}.avatar-preview{width:170px!important;height:190px!important;margin:0 auto}.style-grid{grid-template-columns:repeat(4,1fr)}.style-choice{font-size:13px;padding:8px 2px}}
+
+/* 登入：十一種造型排成格狀 */
+.student-options{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;max-height:46vh;overflow:auto;padding:4px}
+.student-choice{max-width:none;padding:8px 4px;gap:4px}.student-choice .student-portrait{height:104px}.student-choice img.student-body{height:100%}
