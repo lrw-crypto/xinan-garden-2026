@@ -23,7 +23,7 @@ for n in names:
     im=M[n];fg=F[n].copy();fg[1125:]=vote[1125:];fg[940:,:1100]=vote[940:,:1100]
     light=(im.min(2)>200)&((im.max(2).astype(int)-im.min(2))<40)
     yy,xx=np.mgrid[0:fg.shape[0],0:fg.shape[1]]
-    kill=light&(((xx>972)&(xx<1100)&(yy>1000))|((xx<648)&(xx>500)&(yy>1035))|((xx>=1100)&(xx<1166)&(yy>950))|((yy>1262)))
+    kill=light&(((xx>972)&(xx<1100)&(yy>1000))|((xx<648)&(xx>500)&(yy>1035))|((xx>=1100)&(xx<1166)&(yy>950))|((xx>=1100)&(xx<1192)&(yy>950)&(yy<1120))|((yy>1262)))
     fg[kill]=False
     fg=cv2.morphologyEx(fg.astype(np.uint8)*255,cv2.MORPH_OPEN,cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(7,7)))
     meta[code[n]]={}
